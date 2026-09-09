@@ -9,6 +9,8 @@ FineRx website — **the free FineRx discount card**, and the reviewed map of
 12 languages), through the
 [Model Context Protocol](https://modelcontextprotocol.io).
 
+Source: [github.com/andrewfinerx/finerx-mcp](https://github.com/andrewfinerx/finerx-mcp) (public mirror of this package, MIT; issues welcome).
+
 `finerx-mcp` is a thin client over the FineRx **public REST API**
 (`/api/public/v1`). It has no direct database access and inherits the public
 API's authentication and rate limits, so it adds zero extra attack surface.

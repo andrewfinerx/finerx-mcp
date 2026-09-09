@@ -34,8 +34,10 @@ dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 finerx-mcp = "finerx_mcp.server:main"
 
 [project.urls]
-Homepage = "https://finerxfinder.com/developers"
-Documentation = "https://finerxfinder.com/developers"
+Homepage = "https://www.finerxfinder.com/en/connect"
+Documentation = "https://www.finerxfinder.com/en/developers"
+Repository = "https://github.com/andrewfinerx/finerx-mcp"
+Issues = "https://github.com/andrewfinerx/finerx-mcp/issues"
 
 [build-system]
 requires = ["hatchling"]
