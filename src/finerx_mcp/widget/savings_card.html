@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FineRx savings card</title>
+<style>
+/* Self-contained on purpose: the host serves this under a default-src 'none'
+   CSP, so there is no external stylesheet, font or image anywhere in the file. */
+:root{
+  --bg:#fff; --fg:#12212b; --muted:#5b6b78; --line:#e4e9ee; --panel:#f5f8f9;
+  --panel-line:#e0e8ea; --teal:#0C7C7C; --teal-2:#1FA6A6; --btn-fg:#fff;
+  --soft-bg:#eef6f6; --soft-fg:#0a6a6a; --ok:#0b6b4f; --err:#a5231c;
+  --shadow:0 10px 28px -14px rgba(12,124,124,.55);
+  --radius:16px; --radius-sm:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131719; --fg:#eef3f4; --muted:#a2b0b6; --line:#293034; --panel:#1b2124;
+    --panel-line:#2b3438; --soft-bg:#16302f; --soft-fg:#7fd6d2; --ok:#6ed3ab;
+    --err:#f2938c; --shadow:0 10px 28px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131719; --fg:#eef3f4; --muted:#a2b0b6; --line:#293034; --panel:#1b2124;
+  --panel-line:#2b3438; --soft-bg:#16302f; --soft-fg:#7fd6d2; --ok:#6ed3ab;
+  --err:#f2938c; --shadow:0 10px 28px -16px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--fg);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,
+       "Apple Color Emoji","Segoe UI Emoji",sans-serif;
+  -webkit-text-size-adjust:100%; overflow-x:hidden;
+}
+#root{max-width:34rem; margin:0 auto; padding:14px 14px 18px}
+section{margin-top:16px}
+h2{margin:0 0 8px; font-size:.95rem; font-weight:700; letter-spacing:-.01em}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.8rem}
+.tiny{font-size:.74rem}
+
+/* --- the card ---------------------------------------------------------- */
+.card{
+  position:relative; overflow:hidden; color:#fff; border-radius:var(--radius);
+  padding:18px 18px 16px; box-shadow:var(--shadow);
+  background:linear-gradient(135deg,#1FA6A6 0%,#0C7C7C 100%);
+}
+.card .mark{
+  position:absolute; right:-.35em; bottom:-.42em; font-size:5.2rem; font-weight:900;
+  letter-spacing:-.04em; line-height:1; color:rgba(255,255,255,.10);
+  pointer-events:none; user-select:none;
+}
+.card .inner{position:relative}
+.brand{
+  font-size:.7rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+  color:rgba(255,255,255,.92);
+}
+.card h1{margin:.15rem 0 0; font-size:clamp(1.25rem,5.5vw,1.5rem); font-weight:800;
+  letter-spacing:-.01em; line-height:1.12}
+.card .sub{margin-top:.3rem; font-size:.8rem; font-weight:600; color:rgba(255,255,255,.9)}
+.codes{display:flex; flex-wrap:wrap; gap:1.25rem; margin-top:1.15rem}
+.codes .k{font-size:.6rem; letter-spacing:.1em; text-transform:uppercase;
+  color:rgba(255,255,255,.72)}
+.codes .v{
+  font-size:clamp(1rem,4.4vw,1.25rem); font-weight:800; line-height:1.15;
+  font-variant-numeric:tabular-nums; user-select:all; -webkit-user-select:all;
+}
+.card .note{margin-top:1.05rem; font-size:.72rem; font-weight:700;
+  color:rgba(255,255,255,.86)}
+
+/* --- panels, price ------------------------------------------------------ */
+.panel{background:var(--panel); border:1px solid var(--panel-line);
+  border-radius:var(--radius-sm); padding:12px 13px}
+.price-top{display:flex; align-items:baseline; flex-wrap:wrap; gap:.45rem}
+.amount{font-size:1.6rem; font-weight:800; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.with{font-size:.85rem; font-weight:600; color:var(--muted)}
+.badge{
+  margin-inline-start:auto; background:var(--soft-bg); color:var(--soft-fg);
+  border-radius:999px; padding:.15rem .55rem; font-size:.7rem; font-weight:700;
+}
+.price-line{margin-top:.35rem}
+.quote{
+  border-inline-start:3px solid var(--teal); padding-inline-start:.7rem;
+  user-select:text; font-size:.92rem;
+}
+
+/* --- steps -------------------------------------------------------------- */
+ol{margin:0; padding-inline-start:1.2rem}
+ol li{margin:.3rem 0}
+
+/* --- buttons ------------------------------------------------------------ */
+.actions{display:flex; flex-wrap:wrap; gap:.5rem}
+button{
+  font:inherit; cursor:pointer; border-radius:12px; padding:.6rem .9rem;
+  border:1px solid transparent; background:var(--teal); color:var(--btn-fg);
+  font-weight:600; font-size:.88rem; line-height:1.2;
+}
+button.ghost{background:transparent; color:var(--fg); border-color:var(--line)}
+button.link{background:none; border:none; padding:.35rem 0; color:var(--soft-fg);
+  font-size:.82rem; text-decoration:underline}
+button[disabled]{opacity:.55; cursor:default}
+button:focus-visible{outline:2px solid var(--teal-2); outline-offset:2px}
+
+/* --- email form --------------------------------------------------------- */
+.form{margin-top:.6rem; display:grid; gap:.55rem}
+input[type=email]{
+  font:inherit; width:100%; padding:.62rem .7rem; border-radius:12px;
+  border:1px solid var(--line); background:var(--bg); color:var(--fg);
+}
+input[type=email]:focus-visible{outline:2px solid var(--teal-2); outline-offset:1px}
+.consent{display:flex; gap:.5rem; align-items:flex-start; font-size:.78rem;
+  color:var(--muted)}
+.consent input{margin-top:.15rem; accent-color:var(--teal); flex:none}
+.status{font-size:.82rem; font-weight:600}
+.status.ok{color:var(--ok)}
+.status.err{color:var(--err)}
+
+/* --- faq, footer -------------------------------------------------------- */
+details{border-top:1px solid var(--line); padding:.55rem 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer; font-weight:600; font-size:.9rem; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; float:inline-end; color:var(--muted); font-weight:700}
+details[open] summary::after{content:"\2212"}
+details p{margin-top:.4rem; color:var(--muted); font-size:.86rem}
+footer{margin-top:18px; padding-top:12px; border-top:1px solid var(--line);
+  color:var(--muted); font-size:.74rem; display:grid; gap:.3rem}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------------
+   * The card the pharmacy actually needs. Hardcoded ONLY as a last resort:
+   * if the host hands us no data at all, a person still gets three usable
+   * codes rather than an empty box. Same values the API serves.
+   * ------------------------------------------------------------------- */
+  var FALLBACK_CARD = {
+    provider: "LowerMyRx", bin: "610219", pcn: "DRX", group: "MYCARD3993"
+  };
+
+  /* English labels, copied verbatim from the site catalog. Every real render
+   * uses `labels` off the tool result instead, in the person's language. */
+  var FALLBACK_LABELS = {
+    cardTitle: "Prescription Card",
+    cardSubtitle: "Show to your pharmacist",
+    providedBy: "Provided by {name}",
+    memberId: "Member ID",
+    bin: "BIN", pcn: "PCN", group: "Group",
+    notInsurance: "This card is not insurance",
+    withCard: "with card",
+    howTitle: "What to say at the counter",
+    showTitle: "Show this card to your pharmacist",
+    email: "Email", print: "Print", copy: "Copy card", copied: "Copied",
+    save: "Save your card", open: "Open my card",
+    emailPlaceholder: "Your email", emailSend: "Send card", sending: "Sending…",
+    emailSent: "Sent — check your inbox",
+    emailError: "Couldn't send — try again",
+    emailConsent: "We’ll send one email with your card. We don’t store your address and won’t email you again.",
+    support: "Customer support",
+    lowest: "Lowest price",
+    pricesChecked: "Prices from {provider} · checked {date}"
+  };
+  var WALLET_APPLE = "Apple Wallet";
+  var WALLET_GOOGLE = "Google Wallet";
+  var ATTRIBUTION = "Prices via FineRx";
+  var APP_NAME = "finerx-savings-card";
+  var APP_VERSION = "1.5.0";
+
+  var data = null;          // structuredContent from get_savings_card
+  var locale = "en";
+  var emailOpen = false;
+  var emailState = null;    // {kind: "sending"|"ok"|"err", text: string}
+
+  /* --- tiny DOM helpers ------------------------------------------------ */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined && text !== null && text !== "") { n.textContent = String(text); }
+    return n;
+  }
+  function add(parent, child) { if (child) { parent.appendChild(child); } return child; }
+  function str(v) { return (typeof v === "string" && v.trim()) ? v : ""; }
+
+  function label(key) {
+    var got = data && data.labels ? str(data.labels[key]) : "";
+    return got || FALLBACK_LABELS[key] || "";
+  }
+  function fill(template, tokens) {
+    var out = template || "";
+    for (var k in tokens) {
+      if (Object.prototype.hasOwnProperty.call(tokens, k)) {
+        out = out.split("{" + k + "}").join(tokens[k]);
+      }
+    }
+    return out;
+  }
+  function identity() {
+    var c = (data && data.card) || {};
+    return {
+      provider: str(c.provider) || FALLBACK_CARD.provider,
+      bin: str(c.bin) || FALLBACK_CARD.bin,
+      pcn: str(c.pcn) || FALLBACK_CARD.pcn,
+      group: str(c.group) || FALLBACK_CARD.group
+    };
+  }
+  function money(value, currency) {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency", currency: currency || "USD",
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }).format(value);
+    } catch (e) {
+      return "$" + Number(value).toFixed(2);
+    }
+  }
+  function day(iso) {
+    if (!str(iso)) { return ""; }
+    try {
+      var parts = iso.split("-");
+      var d = new Date(Date.UTC(+parts[0], +parts[1] - 1, +parts[2]));
+      if (isNaN(d.getTime())) { return iso; }
+      return new Intl.DateTimeFormat(locale, {
+        year: "numeric", month: "short", day: "numeric", timeZone: "UTC"
+      }).format(d);
+    } catch (e) { return iso; }
+  }
+
+  /* ---------------------------------------------------------------------
+   * The host bridge. TWO protocols, detected at runtime and both optional:
+   *   1. the ChatGPT Apps SDK globals on `window.openai`;
+   *   2. the standard MCP Apps JSON-RPC over postMessage (Claude and others).
+   * Every call is wrapped: a host that implements neither must still leave a
+   * readable card on screen, so nothing here may throw.
+   * ------------------------------------------------------------------- */
+  var rpc = (function () {
+    var pending = {};
+    var nextId = 1;
+
+    function hosted() {
+      try { return window.parent && window.parent !== window; } catch (e) { return false; }
+    }
+    function post(message) {
+      try { window.parent.postMessage(message, "*"); } catch (e) { /* no host */ }
+    }
+    function notify(method, params) {
+      if (!hosted()) { return; }
+      post({ jsonrpc: "2.0", method: method, params: params || {} });
+    }
+    function request(method, params) {
+      return new Promise(function (resolve, reject) {
+        if (!hosted()) { reject(new Error("no host")); return; }
+        var id = nextId++;
+        pending[id] = { resolve: resolve, reject: reject };
+        post({ jsonrpc: "2.0", id: id, method: method, params: params || {} });
+        setTimeout(function () {
+          if (pending[id]) { delete pending[id]; reject(new Error("timeout")); }
+        }, 30000);
+      });
+    }
+    function settle(message) {
+      var waiter = pending[message.id];
+      if (!waiter) { return; }
+      delete pending[message.id];
+      if (message.error) { waiter.reject(message.error); } else { waiter.resolve(message.result); }
+    }
+    return { post: post, notify: notify, request: request, settle: settle, hosted: hosted };
+  }());
+
+  function openai() {
+    try { return window.openai || null; } catch (e) { return null; }
+  }
+
+  /* Take whatever the host knows about how we are being shown. */
+  function applyHostContext(ctx) {
+    if (!ctx || typeof ctx !== "object") { return; }
+    if (str(ctx.theme)) { applyTheme(ctx.theme); }
+    if (str(ctx.locale)) { applyLocale(ctx.locale); }
+  }
+  function applyTheme(theme) {
+    try {
+      var value = String(theme).toLowerCase();
+      if (value === "dark" || value === "light") {
+        document.documentElement.setAttribute("data-theme", value);
+      }
+    } catch (e) { /* keep prefers-color-scheme */ }
+  }
+  function applyLocale(value) {
+    var next = str(value);
+    if (!next) { return; }
+    locale = next;
+    try {
+      document.documentElement.lang = next;
+      document.documentElement.dir = /^ar\b|^ar-/i.test(next) ? "rtl" : "ltr";
+    } catch (e) { /* ignore */ }
+  }
+
+  /* The payload of a CallToolResult, whichever way the host shaped it. */
+  function payloadOf(result) {
+    if (!result || typeof result !== "object") { return null; }
+    if (result.structuredContent && typeof result.structuredContent === "object") {
+      return result.structuredContent;
+    }
+    var blocks = result.content;
+    if (Object.prototype.toString.call(blocks) === "[object Array]") {
+      for (var i = 0; i < blocks.length; i++) {
+        var block = blocks[i];
+        if (block && block.type === "text" && typeof block.text === "string") {
+          try { return JSON.parse(block.text); } catch (e) { /* not our JSON */ }
+        }
+      }
+    }
+    return null;
+  }
+
+  function applyToolResult(result) {
+    var payload = payloadOf(result);
+    if (!payload) { return; }
+    setData(payload);
+  }
+  function setData(payload) {
+    if (!payload || typeof payload !== "object") { return; }
+    data = payload;
+    if (str(payload.locale)) { applyLocale(payload.locale); }
+    render();
+  }
+
+  /* --- host -> app ----------------------------------------------------- */
+  window.addEventListener("message", function (event) {
+    var message = event.data;
+    if (!message || typeof message !== "object" || message.jsonrpc !== "2.0") { return; }
+    var hasId = message.id !== undefined && message.id !== null;
+    if (hasId && (message.result !== undefined || message.error !== undefined)) {
+      rpc.settle(message);
+      return;
+    }
+    if (message.method === "ping") {
+      if (hasId) { rpc.post({ jsonrpc: "2.0", id: message.id, result: {} }); }
+      return;
+    }
+    if (message.method === "ui/notifications/tool-result") {
+      applyToolResult(message.params);
+    } else if (message.method === "ui/notifications/host-context-changed") {
+      applyHostContext((message.params && message.params.hostContext) || message.params);
+    }
+    /* tool-input, tool-cancelled, sandbox-* and anything unknown: ignored. */
+  });
+
+  /* --- app -> host ----------------------------------------------------- */
+  function openLink(url) {
+    if (!str(url)) { return; }
+    var sdk = openai();
+    if (sdk && typeof sdk.openExternal === "function") {
+      try { sdk.openExternal({ href: url }); return; } catch (e) { /* fall through */ }
+    }
+    if (rpc.hosted()) { rpc.notify("ui/open-link", { url: url }); return; }
+    try { window.open(url, "_blank", "noopener"); } catch (e) { /* nothing left */ }
+  }
+
+  function callTool(name, args) {
+    var sdk = openai();
+    if (sdk && typeof sdk.callTool === "function") {
+      try { return Promise.resolve(sdk.callTool(name, args)); } catch (e) { /* fall through */ }
+    }
+    return rpc.request("tools/call", { name: name, arguments: args });
+  }
+
+  /* Only a host can send the mail, so only a host gets the button — offering a
+     form that cannot submit would be worse than not offering one. */
+  function canCallTools() {
+    var sdk = openai();
+    if (sdk && typeof sdk.callTool === "function") { return true; }
+    return rpc.hosted();
+  }
+
+  var lastHeight = 0;
+  function reportHeight() {
+    var height = 0;
+    try {
+      height = Math.ceil(Math.max(
+        document.documentElement.scrollHeight || 0,
+        document.body ? document.body.scrollHeight : 0
+      ));
+    } catch (e) { return; }
+    if (!height || height === lastHeight) { return; }
+    lastHeight = height;
+    var sdk = openai();
+    if (sdk && typeof sdk.notifyIntrinsicHeight === "function") {
+      try { sdk.notifyIntrinsicHeight(height); } catch (e) { /* ignore */ }
+    }
+    var width = 0;
+    try { width = Math.ceil(document.documentElement.clientWidth || 0); } catch (e) { width = 0; }
+    rpc.notify("ui/notifications/size-changed", { width: width, height: height });
+  }
+
+  /* --- render ---------------------------------------------------------- */
+  function cardVisual() {
+    var id = identity();
+    var box = el("div", "card");
+    add(box, el("span", "mark", "FineRx"));
+    var inner = add(box, el("div", "inner"));
+    add(inner, el("p", "brand", "FineRx"));
+    add(inner, el("h1", null, label("cardTitle")));
+    var by = fill(label("providedBy"), { name: id.provider });
+    add(inner, el("p", "sub", label("cardSubtitle") + " · " + by));
+
+    var codes = add(inner, el("div", "codes"));
+    [["bin", id.bin], ["pcn", id.pcn], ["group", id.group]].forEach(function (pair) {
+      var cell = add(codes, el("div"));
+      add(cell, el("p", "k", label(pair[0])));
+      add(cell, el("p", "v", pair[1]));
+    });
+    add(inner, el("p", "note", label("notInsurance")));
+    return box;
+  }
+
+  function priceBlock() {
+    var price = data && data.price;
+    if (!price || typeof price !== "object") { return null; }
+    var amount = typeof price.price === "number" ? price.price : null;
+    var note = str(price.note);
+    if (amount === null && !note) { return null; }
+
+    var box = el("section");
+    var panel = add(box, el("div", "panel"));
+
+    if (amount !== null) {
+      var top = add(panel, el("div", "price-top"));
+      add(top, el("span", "amount", money(amount, str(price.currency) || "USD")));
+      add(top, el("span", "with", label("withCard")));
+      if (price.isLowest === true) { add(top, el("span", "badge", label("lowest"))); }
+
+      var facts = [];
+      if (str(price.variantLabel)) { facts.push(str(price.variantLabel)); }
+      if (str(price.pharmacy)) { facts.push(str(price.pharmacy)); }
+      if (facts.length) {
+        add(panel, el("p", "price-line small muted", facts.join(" · ")));
+      }
+      var observed = day(price.observedAt);
+      if (observed) {
+        add(panel, el("p", "tiny muted", fill(label("pricesChecked"), {
+          provider: identity().provider, date: observed
+        })));
+      }
+    }
+    if (note) { add(panel, el("p", (amount === null ? "small" : "small muted"), note)); }
+    return box;
+  }
+
+  function phraseBlock() {
+    var phrase = str(data && data.pharmacistPhrase);
+    if (!phrase) { return null; }
+    var box = el("section");
+    add(box, el("h2", null, label("showTitle")));
+    add(box, el("p", "quote", phrase));
+    var button = add(box, el("button", "link", label("copy")));
+    button.style.marginTop = ".4rem";
+    button.addEventListener("click", function () { copyPhrase(phrase, button); });
+    return box;
+  }
+
+  function copyPhrase(text, button) {
+    var done = function () {
+      button.textContent = label("copied");
+      setTimeout(function () { button.textContent = label("copy"); }, 2000);
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { selectPhrase(); });
+        return;
+      }
+    } catch (e) { /* fall through to selection */ }
+    selectPhrase(done);
+  }
+
+  /* No clipboard permission: select the sentence so it can be copied by hand
+     rather than leaving a button that silently does nothing. */
+  function selectPhrase(done) {
+    try {
+      var node = document.querySelector(".quote");
+      if (!node) { return; }
+      var range = document.createRange();
+      range.selectNodeContents(node);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      if (document.execCommand && document.execCommand("copy") && done) { done(); }
+    } catch (e) { /* nothing more we can do */ }
+  }
+
+  function stepsBlock() {
+    var steps = data && data.howToUse;
+    if (Object.prototype.toString.call(steps) !== "[object Array]" || !steps.length) { return null; }
+    var box = el("section");
+    add(box, el("h2", null, label("howTitle")));
+    var list = add(box, el("ol"));
+    steps.forEach(function (step) {
+      if (str(step)) { add(list, el("li", null, step)); }
+    });
+    return list.childNodes.length ? box : null;
+  }
+
+  function actionButton(row, text, ghost, onClick) {
+    if (!str(text)) { return null; }
+    var button = add(row, el("button", ghost ? "ghost" : null, text));
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  function actionsBlock() {
+    var delivery = (data && data.delivery) || {};
+    var box = el("section");
+    var row = add(box, el("div", "actions"));
+
+    var cardUrl = str(delivery.cardUrl) || str(data && data.card && data.card.url);
+    if (cardUrl) {
+      actionButton(row, label("open"), false, function () { openLink(cardUrl); });
+    }
+    if (str(delivery.printUrl)) {
+      actionButton(row, label("print"), true, function () { openLink(delivery.printUrl); });
+    }
+    var imageUrl = str(delivery.imageUrl) || str(data && data.imageUrl);
+    if (imageUrl) {
+      actionButton(row, label("save"), true, function () { openLink(imageUrl); });
+    }
+    if (canCallTools()) {
+      actionButton(row, label("email"), true, function () {
+        emailOpen = !emailOpen;
+        emailState = null;
+        render();
+      });
+    }
+    if (str(delivery.walletApple)) {
+      actionButton(row, WALLET_APPLE, true, function () { openLink(delivery.walletApple); });
+    }
+    if (str(delivery.walletGoogle)) {
+      actionButton(row, WALLET_GOOGLE, true, function () { openLink(delivery.walletGoogle); });
+    }
+    if (!row.childNodes.length) { return null; }
+    if (emailOpen) { add(box, emailForm()); }
+    return box;
+  }
+
+  /* The one action in the widget. The address is typed here, sent once through
+     `email_savings_card`, and never written back into the page. */
+  function emailForm() {
+    var form = el("div", "form");
+    if (emailState && emailState.kind === "ok") {
+      add(form, el("p", "status ok", emailState.text));
+      return form;
+    }
+    var input = add(form, el("input"));
+    input.type = "email";
+    input.required = true;
+    input.placeholder = label("emailPlaceholder");
+    input.setAttribute("aria-label", label("emailPlaceholder"));
+    input.autocomplete = "email";
+
+    var consentRow = add(form, el("label", "consent"));
+    var consent = add(consentRow, el("input"));
+    consent.type = "checkbox";
+    add(consentRow, el("span", null, label("emailConsent")));
+
+    var send = add(form, el("button", null, label("emailSend")));
+    var status = add(form, el("p", "status"));
+    if (emailState) {
+      status.textContent = emailState.text;
+      status.className = "status" + (emailState.kind === "err" ? " err" : "");
+    }
+
+    function submit() {
+      var address = (input.value || "").trim();
+      if (!address || address.indexOf("@") < 1 || !consent.checked) {
+        status.className = "status err";
+        status.textContent = label("emailError");
+        reportHeight();
+        return;
+      }
+      send.disabled = true;
+      status.className = "status";
+      status.textContent = label("sending");
+      reportHeight();
+      callTool("email_savings_card", {
+        email: address, consent: true, locale: locale
+      }).then(function (result) {
+        var out = payloadOf(result) || {};
+        if (out.sent === true) {
+          emailState = { kind: "ok", text: label("emailSent") };
+        } else {
+          emailState = { kind: "err", text: str(out.error) || label("emailError") };
+        }
+        render();
+      }, function () {
+        emailState = { kind: "err", text: label("emailError") };
+        render();
+      });
+    }
+    send.addEventListener("click", submit);
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") { event.preventDefault(); submit(); }
+    });
+    return form;
+  }
+
+  function proseBlock() {
+    var accepted = str(data && data.acceptedAt);
+    var what = str(data && data.whatItIs);
+    if (!accepted && !what) { return null; }
+    var box = el("section");
+    if (accepted) { add(box, el("p", "small", accepted)); }
+    if (what) {
+      var p = add(box, el("p", "small muted", what));
+      p.style.marginTop = accepted ? ".4rem" : "0";
+    }
+    return box;
+  }
+
+  function faqBlock() {
+    var items = data && data.faq;
+    if (Object.prototype.toString.call(items) !== "[object Array]" || !items.length) { return null; }
+    var box = el("section");
+    items.forEach(function (item) {
+      if (!item || !str(item.q) || !str(item.a)) { return; }
+      var details = add(box, el("details"));
+      add(details, el("summary", null, item.q));
+      add(details, el("p", null, item.a));
+      details.addEventListener("toggle", reportHeight);
+    });
+    return box.childNodes.length ? box : null;
+  }
+
+  function footerBlock() {
+    var legal = (data && data.legal) || {};
+    var box = el("footer");
+    if (str(legal.commissionNote)) { add(box, el("p", null, legal.commissionNote)); }
+    var disclaimer = str(legal.disclaimer) || str(data && data.disclaimer);
+    if (disclaimer) { add(box, el("p", null, disclaimer)); }
+    if (str(legal.supportPhone)) {
+      add(box, el("p", null, label("support") + ": " + legal.supportPhone));
+    }
+    // The API's disclaimer already opens with the attribution; print it on its
+    // own only when the host handed us a payload without one.
+    if (disclaimer.indexOf(ATTRIBUTION) === -1) { add(box, el("p", null, ATTRIBUTION)); }
+    return box;
+  }
+
+  function render() {
+    var root = document.getElementById("root");
+    if (!root) { return; }
+    var next = document.createDocumentFragment();
+    add(next, cardVisual());
+    add(next, priceBlock());
+    add(next, phraseBlock());
+    add(next, stepsBlock());
+    add(next, actionsBlock());
+    add(next, proseBlock());
+    add(next, faqBlock());
+    add(next, footerBlock());
+    root.textContent = "";
+    root.appendChild(next);
+    reportHeight();
+  }
+
+  /* --- start ----------------------------------------------------------- */
+  function readOpenaiGlobals() {
+    var sdk = openai();
+    if (!sdk) { return; }
+    try { if (str(sdk.theme)) { applyTheme(sdk.theme); } } catch (e) { /* ignore */ }
+    try { if (str(sdk.locale)) { applyLocale(sdk.locale); } } catch (e) { /* ignore */ }
+    try {
+      if (sdk.toolOutput && typeof sdk.toolOutput === "object") { setData(sdk.toolOutput); }
+    } catch (e) { /* ignore */ }
+  }
+
+  render();  /* a usable card before any host says a word */
+
+  if (openai()) {
+    readOpenaiGlobals();
+    window.addEventListener("openai:set_globals", function () { readOpenaiGlobals(); });
+  }
+
+  /* The standard MCP Apps handshake. The tool-result notification may land
+     before or after this resolves, so render() is idempotent and runs either
+     way. Failure is silent by design: a host that speaks neither protocol
+     still shows the card above. */
+  rpc.request("ui/initialize", {
+    protocolVersion: "2025-06-18",
+    appInfo: { name: APP_NAME, version: APP_VERSION },
+    appCapabilities: {}
+  }).then(function (result) {
+    if (result && result.hostContext) { applyHostContext(result.hostContext); }
+    rpc.notify("ui/notifications/initialized", {});
+    render();
+  }, function () { /* no MCP Apps host here */ });
+
+  try {
+    if (window.ResizeObserver) {
+      new ResizeObserver(reportHeight).observe(document.body);
+    } else {
+      window.addEventListener("resize", reportHeight);
+    }
+  } catch (e) {
+    try { window.addEventListener("resize", reportHeight); } catch (e2) { /* ignore */ }
+  }
+}());
+</script>
+</body>
+</html>

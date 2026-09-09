@@ -1,0 +1,55 @@
+[project]
+name = "finerx-mcp"
+version = "1.5.0"
+description = "FineRx for AI assistants: observed US prescription prices by pharmacy with dates and the free discount card; also US equivalents of foreign-brand medicines and pages in 12 languages (thin client over the FineRx public REST API)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "FineRx" }]
+keywords = ["mcp", "model-context-protocol", "finerx", "drug-prices", "pharmacy", "healthcare"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # <2 on purpose: mcp 2.x renamed FastMCP → MCPServer and changed the tool/
+    # content APIs; a fresh `pip install` on the box resolved 2.x and the hosted
+    # endpoint crash-looped (2026-09-09). Lift the cap only with a real migration.
+    "mcp>=1.2,<2",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+finerx-mcp = "finerx_mcp.server:main"
+
+[project.urls]
+Homepage = "https://finerxfinder.com/developers"
+Documentation = "https://finerxfinder.com/developers"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/finerx_mcp"]
+
+# Drop the 176 KB dev-workspace lockfile from the published source archive.
+# uv.lock is public dependency hashes (not a secret) that consumers of a
+# LIBRARY never need — it was the whole reason the sdist was 60 KB.
+[tool.hatch.build.targets.sdist]
+exclude = ["uv.lock"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
