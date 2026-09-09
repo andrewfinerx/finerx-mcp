@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "finerx",
+  "version": "1.5.0",
+  "description": "Observed US prescription prices by pharmacy chain and savings program (with dates) and the free FineRx discount card; also US equivalents of foreign-brand medicines and pages in 12 languages. Hosted MCP server, no key needed.",
+  "author": {"name": "FineRx", "email": "partners@finerxfinder.com", "url": "https://www.finerxfinder.com"},
+  "homepage": "https://www.finerxfinder.com/en/connect",
+  "repository": "https://github.com/andrewfinerx/finerx-mcp",
+  "license": "MIT",
+  "keywords": ["mcp", "healthcare", "pharmacy", "prescription-prices", "drug-prices", "discount-card", "us-equivalents"]
+}
