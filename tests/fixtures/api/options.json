@@ -1,0 +1,66 @@
+{
+ "drug": {
+  "slug": "atorvastatin-calcium",
+  "name": "Atorvastatin Calcium",
+  "kind": "generic"
+ },
+ "configs": [
+  {
+   "form": "Tablet",
+   "strength": "10mg",
+   "label": "10mg Tablet",
+   "quantities": [
+    {
+     "quantity": 30,
+     "label": "30 × 10mg Tablet",
+     "cardFrom": {
+      "amount": 11.62,
+      "observedAt": "2026-09-20"
+     },
+     "chainsPriced": 16
+    },
+    {
+     "quantity": 90,
+     "label": "90 × 10mg Tablet",
+     "cardFrom": {
+      "amount": 19.8,
+      "observedAt": "2026-09-19"
+     },
+     "chainsPriced": 14
+    },
+    {
+     "quantity": 45,
+     "label": "45 × 10mg Tablet",
+     "cardFrom": null,
+     "chainsPriced": 0
+    }
+   ]
+  },
+  {
+   "form": "Tablet",
+   "strength": "20mg",
+   "label": "20mg Tablet",
+   "quantities": [
+    {
+     "quantity": 30,
+     "label": "30 × 20mg Tablet",
+     "cardFrom": {
+      "amount": 9.4,
+      "observedAt": "2026-09-21"
+     },
+     "chainsPriced": 15
+    }
+   ]
+  }
+ ],
+ "defaultConfig": {
+  "form": "Tablet",
+  "strength": "10mg",
+  "quantity": 30
+ },
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

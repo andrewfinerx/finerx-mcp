@@ -1,0 +1,9 @@
+{
+ "error": "drug_not_found",
+ "suggestions": [
+  {
+   "slug": "atorvastatin-calcium",
+   "name": "Atorvastatin Calcium"
+  }
+ ]
+}

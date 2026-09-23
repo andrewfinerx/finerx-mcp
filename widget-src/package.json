@@ -1,0 +1,25 @@
+{
+  "name": "finerx-mcp-widget",
+  "private": true,
+  "version": "2.0.0",
+  "description": "FineRx MCP App v2: one self-contained HTML bundle (ui://finerx/v2/app.html) for MCP Apps hosts and ChatGPT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build && node scripts/finalize.mjs",
+    "check": "node scripts/finalize.mjs --check-only",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@testing-library/preact": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^3.2.7"
+  }
+}

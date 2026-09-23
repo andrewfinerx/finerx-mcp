@@ -1,0 +1,182 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "We have not seen a card price for estradiol 1 mg, 60 tablets. Card prices exist for 30 and 90 tablets."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "prices",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "estradiol",
+        "name": "Estradiol"
+      },
+      "package": {
+        "form": "tablet",
+        "strength": "1 mg",
+        "quantity": 60,
+        "label": "1 mg tablet · 60 tablets"
+      },
+      "options": {
+        "configs": [
+          {
+            "form": "tablet",
+            "strength": "0.5 mg",
+            "label": "0.5 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.1,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 11
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 9.8,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 9
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "1 mg",
+            "label": "1 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.2,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 12
+              },
+              {
+                "quantity": 60,
+                "label": "60 tablets",
+                "cardFrom": null,
+                "chainsPriced": 0
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 10.4,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 10
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "2 mg",
+            "label": "2 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 5.6,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 10
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 13.9,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 8
+              }
+            ]
+          }
+        ]
+      },
+      "origin": {
+        "zip": "10001",
+        "city": "New York",
+        "state": "NY",
+        "precision": "zip"
+      },
+      "rows": [
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "price": null,
+          "zone": null,
+          "nearestMiles": 0.2,
+          "storeCount": 40
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "price": null,
+          "zone": null,
+          "nearestMiles": 0.3,
+          "storeCount": 38
+        }
+      ],
+      "pricesWithoutStores": [],
+      "moreCount": 0,
+      "needsZip": false,
+      "coverage": {
+        "status": "other_quantities",
+        "quantities": [
+          30,
+          90
+        ]
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": null,
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial — estimated prices are on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 20–21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works."
+    },
+    "finerx/build": "dfdc0ba1"
+  }
+}

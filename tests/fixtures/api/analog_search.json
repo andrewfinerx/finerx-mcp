@@ -1,0 +1,26 @@
+{
+ "query": "nurofen",
+ "count": 1,
+ "results": [
+  {
+   "brand": "Nurofen",
+   "brandSlug": "nurofen",
+   "brandScript": "Нурофен",
+   "translit": "Nurofen",
+   "matchedName": "Нурофен",
+   "countries": [
+    "RU",
+    "UA"
+   ],
+   "usClass": "same_inn",
+   "inn": "ibuprofen",
+   "usGeneric": "ibuprofen",
+   "pageUrl": "https://www.finerxfinder.com/en/analog/nurofen"
+  }
+ ],
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

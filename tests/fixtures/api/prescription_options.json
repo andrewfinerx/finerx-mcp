@@ -1,0 +1,34 @@
+{
+ "locale": "en",
+ "drug": "atorvastatin-calcium",
+ "havePrescription": {
+  "summary": "Take it to any pharmacy.",
+  "steps": [
+   "Pick a pharmacy.",
+   "Show the card."
+  ]
+ },
+ "noPrescription": {
+  "summary": "You need a prescriber first.",
+  "options": [
+   {
+    "name": "A community health center",
+    "url": "https://findahealthcenter.hrsa.gov",
+    "note": "sliding-scale fees",
+    "affiliate": false,
+    "disclosure": null
+   }
+  ]
+ },
+ "brandCostly": {
+  "summary": "Ask about the generic.",
+  "options": []
+ },
+ "medicaidNote": "Medicaid may cover it.",
+ "disclaimer": "Not medical advice.",
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "dataset": {
+  "drugs": 1257,
+  "products": 74148,
+  "prices": 5400000,
+  "chains": 40,
+  "savingsPrograms": 14,
+  "pharmacyLocations": 21909,
+  "latestObservedAt": "2026-09-21"
+ },
+ "attribution": "Prices via FineRx (finerxfinder.com)",
+ "sourceAttributions": [
+  "Pharmacy locations: © OpenStreetMap contributors (ODbL)",
+  "Place names: GeoNames (CC BY 4.0)"
+ ],
+ "termsUrl": "https://www.finerxfinder.com/en/developers",
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

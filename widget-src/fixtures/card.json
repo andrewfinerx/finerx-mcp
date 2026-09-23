@@ -1,0 +1,68 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Free FineRx card: BIN 610219 · PCN DRX · Group MYCARD3993. Not insurance."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "card",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "estradiol",
+        "name": "Estradiol"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $4.20 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 20–21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works."
+    },
+    "finerx/build": "dfdc0ba1"
+  }
+}

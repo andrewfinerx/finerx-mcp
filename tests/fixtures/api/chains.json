@@ -1,0 +1,42 @@
+{
+ "chains": [
+  {
+   "code": "walmart",
+   "name": "Walmart",
+   "banners": [
+    "Walmart Neighborhood Market",
+    "Walmart Pharmacy"
+   ],
+   "storeCount": 0,
+   "hasGeo": false,
+   "priceZones": true
+  },
+  {
+   "code": "cvs",
+   "name": "CVS",
+   "banners": [
+    "CVS Pharmacy",
+    "Navarro Discount Pharmacy"
+   ],
+   "storeCount": 8603,
+   "hasGeo": true,
+   "priceZones": false
+  },
+  {
+   "code": "walgreens",
+   "name": "Walgreens",
+   "banners": [
+    "Walgreens"
+   ],
+   "storeCount": 9130,
+   "hasGeo": true,
+   "priceZones": false
+  }
+ ],
+ "asOf": "2026-09-22",
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

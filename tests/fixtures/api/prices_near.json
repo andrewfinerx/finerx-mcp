@@ -1,0 +1,250 @@
+{
+ "origin": {
+  "zip": "33101",
+  "city": "Miami",
+  "state": "FL",
+  "precision": "zip"
+ },
+ "drug": {
+  "slug": "atorvastatin-calcium",
+  "name": "Atorvastatin Calcium",
+  "kind": "generic"
+ },
+ "package": {
+  "form": "Tablet",
+  "strength": "10mg",
+  "quantity": 30,
+  "label": "30 × 10mg Tablet"
+ },
+ "coverage": {
+  "status": "exact",
+  "quantities": [
+   10,
+   30,
+   45,
+   60,
+   90,
+   100
+  ]
+ },
+ "chains": [
+  {
+   "family": "publix",
+   "name": "Publix",
+   "price": {
+    "amount": 30.15,
+    "observedAt": "2026-09-20"
+   },
+   "zone": null,
+   "storeCount": 165,
+   "nearestMiles": 0.1,
+   "stores": [
+    {
+     "name": "Publix",
+     "address": "601 Northwest 2nd Avenue",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33136",
+     "miles": 0.1,
+     "lat": 25.779985,
+     "lon": -80.197721,
+     "kind": "pharmacy"
+    },
+    {
+     "name": "Publix",
+     "address": "1776 Biscayne Boulevard",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33132",
+     "miles": 1.1,
+     "lat": 25.79239,
+     "lon": -80.18853,
+     "kind": "pharmacy"
+    }
+   ]
+  },
+  {
+   "family": "cvs",
+   "name": "CVS",
+   "price": {
+    "amount": 32.99,
+    "observedAt": "2026-09-19"
+   },
+   "zone": null,
+   "storeCount": 120,
+   "nearestMiles": 0.3,
+   "stores": [
+    {
+     "name": "CVS Pharmacy",
+     "address": "300 Biscayne Blvd",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33131",
+     "miles": 0.3,
+     "lat": 25.7751,
+     "lon": -80.1878,
+     "kind": "pharmacy"
+    }
+   ]
+  },
+  {
+   "family": "walgreens",
+   "name": "Walgreens",
+   "price": {
+    "amount": 35.0,
+    "observedAt": "2026-09-19"
+   },
+   "zone": null,
+   "storeCount": 140,
+   "nearestMiles": 0.4,
+   "stores": [
+    {
+     "name": "Walgreens",
+     "address": "200 E Flagler St",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33131",
+     "miles": 0.4,
+     "lat": 25.7743,
+     "lon": -80.1906,
+     "kind": "pharmacy"
+    }
+   ]
+  },
+  {
+   "family": "albertsons",
+   "name": "Albertsons",
+   "price": {
+    "amount": 41.2,
+    "observedAt": "2026-09-17"
+   },
+   "zone": null,
+   "storeCount": 3,
+   "nearestMiles": 12.5,
+   "stores": [
+    {
+     "name": "Albertsons",
+     "address": "1 Main St",
+     "city": "Hialeah",
+     "state": "FL",
+     "zip": "33010",
+     "miles": 12.5,
+     "lat": 25.86,
+     "lon": -80.28,
+     "kind": "pharmacy"
+    }
+   ]
+  },
+  {
+   "family": "kroger",
+   "name": "Kroger",
+   "price": {
+    "amount": 44.0,
+    "observedAt": "2026-09-16"
+   },
+   "zone": null,
+   "storeCount": 1,
+   "nearestMiles": 20.1,
+   "stores": [
+    {
+     "name": "Kroger",
+     "address": "2 Main St",
+     "city": "Homestead",
+     "state": "FL",
+     "zip": "33030",
+     "miles": 20.1,
+     "lat": 25.47,
+     "lon": -80.47,
+     "kind": "store"
+    }
+   ]
+  },
+  {
+   "family": "costco",
+   "name": "Costco",
+   "price": {
+    "amount": 46.0,
+    "observedAt": "2026-09-16"
+   },
+   "zone": null,
+   "storeCount": 2,
+   "nearestMiles": 8.0,
+   "stores": [
+    {
+     "name": "Costco",
+     "address": "13450 SW 120th St",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33186",
+     "miles": 8.0,
+     "lat": 25.65,
+     "lon": -80.41,
+     "kind": "store"
+    }
+   ]
+  },
+  {
+   "family": "shoprite",
+   "name": "ShopRite",
+   "price": null,
+   "zone": null,
+   "storeCount": 1,
+   "nearestMiles": 25.0,
+   "stores": [
+    {
+     "name": "ShopRite",
+     "address": "3 Main St",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33101",
+     "miles": 25.0,
+     "lat": 25.5,
+     "lon": -80.5,
+     "kind": "pharmacy"
+    }
+   ]
+  }
+ ],
+ "pricesWithoutStores": [
+  {
+   "family": "walmart",
+   "name": "Walmart",
+   "price": {
+    "amount": 11.62,
+    "observedAt": "2026-09-20"
+   }
+  },
+  {
+   "family": "capsule",
+   "name": "Capsule",
+   "price": {
+    "amount": 14.0,
+    "observedAt": "2026-09-19"
+   }
+  }
+ ],
+ "needsZip": false,
+ "card": {
+  "codes": {
+   "bin": "610219",
+   "pcn": "DRX",
+   "group": "MYCARD3993"
+  },
+  "priceWithCard": {
+   "amount": 30.15,
+   "family": "publix",
+   "name": "Publix",
+   "observedAt": "2026-09-20"
+  },
+  "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $30.15 (observed 2026-09-20), more on our site. Show the card at the pharmacy to get the final price.",
+  "fine": "Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice",
+  "chainsCount": 36,
+  "siteUrl": "https://www.finerxfinder.com/en/drug/atorvastatin-calcium?src=mcp",
+  "printUrl": "https://www.finerxfinder.com/en/card/print?src=mcp"
+ },
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

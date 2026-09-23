@@ -1,0 +1,59 @@
+{
+ "brand": "Nurofen",
+ "brandSlug": "nurofen",
+ "brandScript": "Нурофен",
+ "translit": "Nurofen",
+ "countries": [
+  "RU",
+  "UA"
+ ],
+ "inn": "ibuprofen",
+ "usClass": "same_inn",
+ "usGeneric": "ibuprofen",
+ "usBrands": [
+  "Advil",
+  "Motrin"
+ ],
+ "otcOrRxUs": "otc",
+ "rxStatus": "over the counter",
+ "notes": "Ibuprofen is widely available OTC in the US.",
+ "notesLocalized": null,
+ "components": null,
+ "usDrug": {
+  "slug": "atorvastatin-calcium",
+  "name": "Atorvastatin Calcium",
+  "fromPrice": 4.0,
+  "observedAt": "2026-09-05",
+  "packageLabel": "10 mg · 30 tablets",
+  "url": "https://www.finerxfinder.com/en/drug/atorvastatin-calcium"
+ },
+ "pageUrl": "https://www.finerxfinder.com/en/analog/nurofen",
+ "usDrugUrl": "https://www.finerxfinder.com/en/drug/atorvastatin-calcium",
+ "guidance": "Nurofen contains ibuprofen. In the US the same active ingredient is sold as ibuprofen (brands: Advil, Motrin); ask the pharmacist for it by that name.",
+ "disclaimer": "Same active ingredient does not mean the same product: strength, form and excipients can differ. Confirm with a pharmacist. Not medical advice.",
+ "savingsCard": {
+  "card": {
+   "provider": "LowerMyRx",
+   "bin": "610219",
+   "pcn": "DRX",
+   "group": "MYCARD3993",
+   "url": "https://www.finerxfinder.com/en/card"
+  },
+  "line": "x",
+  "cardUrl": "https://www.finerxfinder.com/en/card",
+  "imageUrl": "https://www.finerxfinder.com/card.png",
+  "price": {
+   "price": 4.0,
+   "currency": "USD",
+   "observedAt": "2026-09-05",
+   "pharmacy": "SingleCare at CVS",
+   "isLowest": true,
+   "note": "the lowest price"
+  }
+ },
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

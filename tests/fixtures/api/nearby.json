@@ -1,0 +1,52 @@
+{
+ "zip": "33101",
+ "results": [
+  {
+   "chain": "Walgreens",
+   "chainCode": "walgreens",
+   "family": "walgreens",
+   "locations": [
+    {
+     "name": "Walgreens",
+     "address": "200 E Flagler St",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33131",
+     "distanceMiles": 0.4,
+     "latitude": 25.7743,
+     "longitude": -80.1906,
+     "family": "walgreens",
+     "lat": 25.7743,
+     "lon": -80.1906,
+     "kind": "pharmacy"
+    }
+   ]
+  },
+  {
+   "chain": "Publix",
+   "chainCode": "publix",
+   "family": "publix",
+   "locations": [
+    {
+     "name": "Publix",
+     "address": "601 Northwest 2nd Avenue",
+     "city": "Miami",
+     "state": "FL",
+     "zip": "33136",
+     "distanceMiles": 0.1,
+     "latitude": 25.779985,
+     "longitude": -80.197721,
+     "family": "publix",
+     "lat": 25.779985,
+     "lon": -80.197721,
+     "kind": "pharmacy"
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

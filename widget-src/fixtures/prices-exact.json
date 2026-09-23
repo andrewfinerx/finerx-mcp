@@ -1,0 +1,246 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Estradiol 1 mg tablet, 30 tablets, with the free FineRx card: Costco $4.20 (observed Sep 21, 2026), Walmart (Texas price) $6.10 (Sep 21, 2026), H-E-B $7.35 (Sep 20, 2026)."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "prices",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "estradiol",
+        "name": "Estradiol"
+      },
+      "package": {
+        "form": "tablet",
+        "strength": "1 mg",
+        "quantity": 30,
+        "label": "1 mg tablet · 30 tablets"
+      },
+      "options": {
+        "configs": [
+          {
+            "form": "tablet",
+            "strength": "0.5 mg",
+            "label": "0.5 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.1,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 11
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 9.8,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 9
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "1 mg",
+            "label": "1 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.2,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 12
+              },
+              {
+                "quantity": 60,
+                "label": "60 tablets",
+                "cardFrom": null,
+                "chainsPriced": 0
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 10.4,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 10
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "2 mg",
+            "label": "2 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 5.6,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 10
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 13.9,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 8
+              }
+            ]
+          }
+        ]
+      },
+      "origin": {
+        "zip": "78701",
+        "city": "Austin",
+        "state": "TX",
+        "precision": "approx"
+      },
+      "rows": [
+        {
+          "family": "costco",
+          "name": "Costco",
+          "price": {
+            "amount": 4.2,
+            "observedAt": "2026-09-21"
+          },
+          "zone": null,
+          "nearestMiles": 1.2,
+          "storeCount": 2
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart",
+          "price": {
+            "amount": 6.1,
+            "observedAt": "2026-09-21"
+          },
+          "zone": "tx",
+          "nearestMiles": 0.8,
+          "storeCount": 9
+        },
+        {
+          "family": "heb",
+          "name": "H-E-B",
+          "price": {
+            "amount": 7.35,
+            "observedAt": "2026-09-20"
+          },
+          "zone": null,
+          "nearestMiles": 0.6,
+          "storeCount": 14
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          },
+          "zone": null,
+          "nearestMiles": 0.4,
+          "storeCount": 21
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "price": {
+            "amount": 13.05,
+            "observedAt": "2026-09-21"
+          },
+          "zone": null,
+          "nearestMiles": 0.9,
+          "storeCount": 17
+        },
+        {
+          "family": "albertsons",
+          "name": "Randalls",
+          "price": {
+            "amount": 15.99,
+            "observedAt": "2026-09-19"
+          },
+          "zone": null,
+          "nearestMiles": 2.3,
+          "storeCount": 4
+        }
+      ],
+      "pricesWithoutStores": [
+        {
+          "family": "capsule",
+          "name": "Capsule",
+          "price": {
+            "amount": 9.8,
+            "observedAt": "2026-09-21"
+          }
+        }
+      ],
+      "moreCount": 3,
+      "needsZip": false,
+      "coverage": {
+        "status": "exact",
+        "quantities": [
+          30,
+          90
+        ]
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $4.20 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 20–21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works."
+    },
+    "finerx/build": "dfdc0ba1"
+  }
+}

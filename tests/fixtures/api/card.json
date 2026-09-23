@@ -1,0 +1,63 @@
+{
+ "version": "3",
+ "updatedAt": "2026-09-09",
+ "locale": "en",
+ "channel": "mcp",
+ "card": {
+  "provider": "LowerMyRx",
+  "bin": "610219",
+  "pcn": "DRX",
+  "group": "MYCARD3993",
+  "url": "https://www.finerxfinder.com/en/card?src=mcp"
+ },
+ "line": "Free discount card: BIN 610219 · PCN DRX · Group MYCARD3993 — show it at the pharmacy and ask them to run it as a discount card.",
+ "whatItIs": "A free prescription discount card. It is not insurance, needs no sign-up, has no expiry date, and anyone in your household can use it.",
+ "whyUseIt": "Ask for the price with the card and the price without it, and pay the lower one.",
+ "howToUse": [
+  "Show the pharmacist the card, or read out the BIN, PCN and Group code.",
+  "Ask them to run it as a discount card, not as insurance.",
+  "Ask what the price is with the card and without it, and pay the lower one."
+ ],
+ "pharmacistPhrase": "Please run this as a discount card, not as insurance: BIN 610219, PCN DRX, Group MYCARD3993.",
+ "acceptedAt": "Accepted at participating pharmacies, including CVS, Walgreens, Walmart, Kroger, Costco. Ask the pharmacist if in doubt.",
+ "saveHint": "Save the card as an image, email it to yourself, or open the card page on your phone.",
+ "delivery": {
+  "cardUrl": "https://www.finerxfinder.com/en/card?src=mcp",
+  "printUrl": "https://www.finerxfinder.com/en/card/print?src=mcp",
+  "imageUrl": "https://www.finerxfinder.com/card.png?src=mcp",
+  "emailEndpoint": "/card/email",
+  "smsDeepLink": "sms:?&body=FineRx%20free%20discount%20card",
+  "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+  "walletApple": null,
+  "walletGoogle": null
+ },
+ "price": null,
+ "faq": [
+  {
+   "q": "Does it work on every drug?",
+   "a": "Usually yes, but discounts are largest on generics. Always compare."
+  }
+ ],
+ "legal": {
+  "disclaimer": "Prices via FineRx.",
+  "notInsurance": "This is not insurance.",
+  "commissionNote": "FineRx may earn a commission.",
+  "supportPhone": "1-877-823-1273",
+  "supportEmail": "support@lowermyrx.com"
+ },
+ "labels": {
+  "cardTitle": "Prescription Card",
+  "bin": "BIN",
+  "pcn": "PCN",
+  "group": "Group",
+  "lowest": "Lowest price"
+ },
+ "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial — estimated prices are on our site. Show the card at the pharmacy to get the final price.",
+ "fine": "Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice",
+ "chainsCount": 36,
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

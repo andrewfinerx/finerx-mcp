@@ -1,0 +1,105 @@
+{
+ "origin": {
+  "zip": null,
+  "city": null,
+  "state": null,
+  "precision": "none"
+ },
+ "drug": {
+  "slug": "atorvastatin-calcium",
+  "name": "Atorvastatin Calcium",
+  "kind": "generic"
+ },
+ "package": {
+  "form": "Tablet",
+  "strength": "10mg",
+  "quantity": 30,
+  "label": "30 × 10mg Tablet"
+ },
+ "coverage": {
+  "status": "exact",
+  "quantities": [
+   10,
+   30,
+   45,
+   60,
+   90,
+   100
+  ]
+ },
+ "chains": [
+  {
+   "family": "hyvee",
+   "name": "Hy-Vee",
+   "price": {
+    "amount": 11.99,
+    "observedAt": "2026-09-20"
+   },
+   "zone": null,
+   "storeCount": 0,
+   "nearestMiles": null,
+   "stores": []
+  },
+  {
+   "family": "walmart",
+   "name": "Walmart",
+   "price": {
+    "amount": 13.8,
+    "observedAt": "2026-09-20"
+   },
+   "zone": "default",
+   "storeCount": 0,
+   "nearestMiles": null,
+   "stores": []
+  },
+  {
+   "family": "cvs",
+   "name": "CVS",
+   "price": {
+    "amount": 24.5,
+    "observedAt": "2026-09-18"
+   },
+   "zone": null,
+   "storeCount": 0,
+   "nearestMiles": null,
+   "stores": []
+  },
+  {
+   "family": "walgreens",
+   "name": "Walgreens",
+   "price": {
+    "amount": 31.0,
+    "observedAt": "2026-09-19"
+   },
+   "zone": null,
+   "storeCount": 0,
+   "nearestMiles": null,
+   "stores": []
+  }
+ ],
+ "pricesWithoutStores": [],
+ "needsZip": true,
+ "card": {
+  "codes": {
+   "bin": "610219",
+   "pcn": "DRX",
+   "group": "MYCARD3993"
+  },
+  "priceWithCard": {
+   "amount": 11.99,
+   "family": "hyvee",
+   "name": "Hy-Vee",
+   "observedAt": "2026-09-20"
+  },
+  "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $11.99 (observed 2026-09-20), more on our site. Show the card at the pharmacy to get the final price.",
+  "fine": "Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice",
+  "chainsCount": 36,
+  "siteUrl": "https://www.finerxfinder.com/en/drug/atorvastatin-calcium?src=mcp",
+  "printUrl": "https://www.finerxfinder.com/en/card/print?src=mcp"
+ },
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed cash/discount estimates from third-party savings programs, not guaranteed or insured prices, and may be out of date. Verify at the pharmacy before relying on them. Not medical advice. Attribution required: \"Prices via FineRx\".",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

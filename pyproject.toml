@@ -1,7 +1,7 @@
 [project]
 name = "finerx-mcp"
-version = "1.5.0"
-description = "FineRx for AI assistants: observed US prescription prices by pharmacy with dates and the free discount card; also US equivalents of foreign-brand medicines and pages in 12 languages (thin client over the FineRx public REST API)."
+version = "2.0.0"
+description = "FineRx for AI assistants: what US pharmacy chains were seen charging with the free FineRx discount card (with dates, near a ZIP), the card itself, and US equivalents of foreign-brand medicines, in 12 languages (thin client over the FineRx public REST API)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -25,10 +25,15 @@ dependencies = [
     # endpoint crash-looped (2026-09-09). Lift the cap only with a real migration.
     "mcp>=1.2,<2",
     "httpx>=0.27",
+    "pydantic>=2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+]
 
 [project.scripts]
 finerx-mcp = "finerx_mcp.server:main"
@@ -49,8 +54,10 @@ packages = ["src/finerx_mcp"]
 # Drop the 176 KB dev-workspace lockfile from the published source archive.
 # uv.lock is public dependency hashes (not a secret) that consumers of a
 # LIBRARY never need — it was the whole reason the sdist was 60 KB.
+# widget-src/ is the Node source of widget/app.v2.html (built file is in src/);
+# a Python consumer never needs it, nor its package-lock.
 [tool.hatch.build.targets.sdist]
-exclude = ["uv.lock"]
+exclude = ["uv.lock", "widget-src"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

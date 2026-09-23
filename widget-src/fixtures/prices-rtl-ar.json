@@ -1,0 +1,215 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "إستراديول 1 ملغ، 30 قرصًا: Costco $4.20 (21 سبتمبر 2026)."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "prices",
+    "locale": "ar",
+    "dir": "rtl",
+    "data": {
+      "drug": {
+        "slug": "estradiol",
+        "name": "Estradiol"
+      },
+      "package": {
+        "form": "tablet",
+        "strength": "1 mg",
+        "quantity": 30,
+        "label": "1 mg tablet · 30 tablets"
+      },
+      "options": {
+        "configs": [
+          {
+            "form": "tablet",
+            "strength": "0.5 mg",
+            "label": "0.5 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.1,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 11
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 9.8,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 9
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "1 mg",
+            "label": "1 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 4.2,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 12
+              },
+              {
+                "quantity": 60,
+                "label": "60 tablets",
+                "cardFrom": null,
+                "chainsPriced": 0
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 10.4,
+                  "observedAt": "2026-09-21"
+                },
+                "chainsPriced": 10
+              }
+            ]
+          },
+          {
+            "form": "tablet",
+            "strength": "2 mg",
+            "label": "2 mg tablet",
+            "quantities": [
+              {
+                "quantity": 30,
+                "label": "30 tablets",
+                "cardFrom": {
+                  "amount": 5.6,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 10
+              },
+              {
+                "quantity": 90,
+                "label": "90 tablets",
+                "cardFrom": {
+                  "amount": 13.9,
+                  "observedAt": "2026-09-20"
+                },
+                "chainsPriced": 8
+              }
+            ]
+          }
+        ]
+      },
+      "origin": {
+        "zip": "78701",
+        "city": "Austin",
+        "state": "TX",
+        "precision": "approx"
+      },
+      "rows": [
+        {
+          "family": "costco",
+          "name": "Costco",
+          "price": {
+            "amount": 4.2,
+            "observedAt": "2026-09-21"
+          },
+          "zone": null,
+          "nearestMiles": 1.2,
+          "storeCount": 2
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart",
+          "price": {
+            "amount": 6.1,
+            "observedAt": "2026-09-21"
+          },
+          "zone": "tx",
+          "nearestMiles": 0.8,
+          "storeCount": 9
+        },
+        {
+          "family": "heb",
+          "name": "H-E-B",
+          "price": {
+            "amount": 7.35,
+            "observedAt": "2026-09-20"
+          },
+          "zone": null,
+          "nearestMiles": 0.6,
+          "storeCount": 14
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          },
+          "zone": null,
+          "nearestMiles": 0.4,
+          "storeCount": 21
+        }
+      ],
+      "pricesWithoutStores": [],
+      "moreCount": 5,
+      "needsZip": false,
+      "coverage": {
+        "status": "exact",
+        "quantities": [
+          30,
+          90
+        ]
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "استخدم بطاقة FineRx المجانية — مقبولة في أكثر من 34 سلسلة صيدليات، بدون تسجيل. يمكنك حفظها أو طباعتها أو إرسالها بالبريد الإلكتروني أو برسالة نصية. قد يكون التوفير بالبطاقة كبيرًا: السعر التقديري بالبطاقة هو $4.20 (لوحظ في 21 سبتمبر 2026)، والمزيد على موقعنا. أظهر البطاقة في الصيدلية لمعرفة السعر النهائي.",
+      "fine": "ليست تأمينًا · الأسعار كما لوحظت في 20–21 سبتمبر 2026 · قد تحصل FineRx على رسوم · ليست نصيحة طبية",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "السعر مع بطاقة FineRx، من الأقل إلى الأعلى",
+      "nearLabel": "بالقرب من {place}",
+      "approx": "(تقريبي)",
+      "changeZip": "تغيير الرمز البريدي",
+      "withCard": "مع البطاقة",
+      "observed": "لوحظ {date}",
+      "miles": "{n} ميل",
+      "moreChains": "+ {n} سلاسل أخرى",
+      "allPharmacies": "كل الصيدليات",
+      "showAtCounter": "أظهرها عند الصندوق",
+      "save": "حفظ",
+      "copy": "نسخ",
+      "copied": "تم النسخ",
+      "notInsurance": "ليست تأمينًا"
+    },
+    "finerx/build": "dfdc0ba1"
+  },
+  "_note": "Test fixture: the Arabic law/labels are placeholder translations for rendering tests, not the approved locale text (A1 owns that)."
+}

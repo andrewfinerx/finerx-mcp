@@ -1,0 +1,178 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Pharmacies near Austin, TX (approximate) with the estradiol 1 mg card price: CVS 0.4 mi $12.40 (Sep 20, 2026), H-E-B 0.6 mi $7.35 (Sep 20, 2026)."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "pharmacies",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "estradiol",
+        "name": "Estradiol"
+      },
+      "package": {
+        "form": "tablet",
+        "strength": "1 mg",
+        "quantity": 30,
+        "label": "1 mg tablet · 30 tablets"
+      },
+      "origin": {
+        "zip": "78701",
+        "city": "Austin",
+        "state": "TX",
+        "precision": "approx"
+      },
+      "stores": [
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "address": "1101 S Congress Ave",
+          "city": "Austin",
+          "miles": 0.4,
+          "lat": 30.25,
+          "lon": -97.75,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "heb",
+          "name": "H-E-B",
+          "address": "2400 S Congress Ave",
+          "city": "Austin",
+          "miles": 0.6,
+          "lat": 30.24,
+          "lon": -97.75,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 7.35,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart Supercenter",
+          "address": "710 E Ben White Blvd",
+          "city": "Austin",
+          "miles": 0.8,
+          "lat": 30.22,
+          "lon": -97.76,
+          "kind": "store",
+          "price": {
+            "amount": 6.1,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "address": "1600 S Congress Ave",
+          "city": "Austin",
+          "miles": 0.9,
+          "lat": 30.25,
+          "lon": -97.75,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 13.05,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "address": "3500 Guadalupe St",
+          "city": "Austin",
+          "miles": 2.1,
+          "lat": 30.3,
+          "lon": -97.74,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "costco",
+          "name": "Costco",
+          "address": "10401 Research Blvd",
+          "city": "Austin",
+          "miles": 9.7,
+          "lat": 30.4,
+          "lon": -97.73,
+          "kind": "store",
+          "price": {
+            "amount": 4.2,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "address": "4501 S Lamar Blvd",
+          "city": "Austin",
+          "miles": 3.2,
+          "lat": 30.23,
+          "lon": -97.8,
+          "kind": "pharmacy",
+          "price": null
+        }
+      ],
+      "families": [
+        "cvs",
+        "heb",
+        "walmart",
+        "walgreens",
+        "costco"
+      ]
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $4.20 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 20–21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works."
+    },
+    "finerx/build": "dfdc0ba1"
+  }
+}
