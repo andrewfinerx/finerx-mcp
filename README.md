@@ -15,6 +15,26 @@ Source: [github.com/andrewfinerx/finerx-mcp](https://github.com/andrewfinerx/fin
 (`/api/public/v1`). It has no direct database access and inherits the public
 API's authentication and rate limits, so it adds zero extra attack surface.
 
+## What changed in 2.1
+
+- **A search inside the card**: `open_price_finder(query?)` opens the FineRx
+  search (fullscreen where the host allows it); the card suggests medicines as
+  the person types (app-only `ui_suggest`), each with where its card prices
+  start and the date, and foreign brands that matched.
+- **A place as text**: inside the card the person can type a ZIP, a city or a
+  street address. Only the app-only `ui_prices` / `ui_nearby` take it (`where`);
+  it goes once into the body of the API request that places it and is never
+  logged, stored or echoed — the answer names only the ZIP area / city.
+- `find_us_equivalent` and `get_prescription_options` are drawn as views too
+  (`equivalent`, `rx`); every 2.0 field of their results is still there. A
+  foreign brand picked in the search opens the same view (app-only
+  `ui_equivalent`). The three new views use their own template uri,
+  `ui://finerx/v2.1/app.html`, so a host holding the 2.0 HTML never shows them
+  as plain text; the 2.0 tools keep `ui://finerx/v2/app.html`.
+- `email_savings_card` sends a per-person key (an HMAC of the host's anonymous
+  user id), so the API caps card emails per person instead of per server.
+- UI strings for the new views in all 12 languages.
+
 ## What changed in 2.0
 
 - Prices are **card prices by pharmacy chain** with their observation date
@@ -42,9 +62,10 @@ API's authentication and rate limits, so it adds zero extra attack surface.
 | `get_drug(slug, locale?)` | Strengths × forms × pack sizes that have a card price, the default package and its prices by chain |
 | `find_us_equivalent(brand, country?, locale?)` | A medicine from another country → what it is in the US, the vetted sentence to say, its card price |
 | `foreign_brands_for_drug(slug)` | What a US drug is called abroad (the reverse lookup) |
-| `get_prescription_options(locale?, drug?)` | What to do with no prescription yet (for controlled / age-restricted medicines: card prices and the card only) |
+| `get_prescription_options(locale?, drug?)` | What to do with no prescription yet, and where the drug's card prices start (for controlled / age-restricted medicines: card prices and the card only) |
+| `open_price_finder(query?, locale?)` | Opens the search inside the card: matches for `query` with dated "from" card prices, foreign brands, often-searched medicines |
 | `get_dataset_info()` | Card-price coverage: chain families, banners, newest observation, stores on the map |
-| `ui_prices`, `ui_nearby` | App-only (`_meta.ui.visibility: ["app"]`): called by the UI, hidden from the model |
+| `ui_prices`, `ui_nearby`, `ui_suggest`, `ui_equivalent` | App-only (`_meta.ui.visibility: ["app"]`): called by the UI, hidden from the model. Only these take a place as text (`where`) |
 
 Every price carries its `observedAt` date and is never scaled to another pack
 size. The server also ships **`instructions`** (the card rule: answer with each
@@ -117,12 +138,16 @@ completely, with no click-through.
 
 On a host that supports UI components — **ChatGPT** (Apps SDK) and any host that
 implements the standard **MCP Apps** extension (Claude) — `compare_prices`,
-`find_nearby_pharmacies` and `get_savings_card` are drawn by one bundle,
+`find_nearby_pharmacies`, `get_savings_card`, `open_price_finder`,
+`find_us_equivalent` and `get_prescription_options` are drawn by one bundle,
 **`ui://finerx/v2/app.html`** (mime `text/html;profile=mcp-app`), picked by
 `structuredContent.view` of the `finerx.view/2` envelope. Tool `_meta` names it
 under both `ui.resourceUri` and `openai/outputTemplate`; the resource `_meta`
 carries `ui.domain` / `openai/widgetDomain`, an empty CSP and `finerx/build`.
-UI strings arrive in `_meta["finerx/labels"]` in the person's language. The
+What the person picks inside the card (a medicine, dose, pack size, ZIP or
+city — never an address) is sent to the model as context by the bundle
+(`ui/update-model-context`). UI strings arrive in `_meta["finerx/labels"]` in
+the person's language. The
 bundle is built from `widget-src/` (Vite + Preact, single file, no external
 resources) — see `widget-src/README.md`.
 

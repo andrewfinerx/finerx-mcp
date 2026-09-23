@@ -2,7 +2,9 @@
 
 Payloads live in ``fixtures/api/*.json`` and follow the A1 report (the real
 response shapes of API 1.4.0: ``/prices/near``, ``/drugs/{slug}/options``,
-``/drugs/{slug}/card-prices``, ``/chains``, ``/card`` …). Nothing here touches
+``/drugs/{slug}/card-prices``, ``/chains``, ``/card`` …; and of API 1.5.0 (A2):
+``/drugs/suggest``, ``POST /geocode``, ``/prices/near`` answering a typed
+``address``). Nothing here touches
 the network: an unrouted request fails the test.
 """
 from __future__ import annotations
@@ -61,6 +63,8 @@ def add_routes(router: respx.MockRouter) -> dict[str, respx.Route]:
     r["card_email"] = router.post(url__regex=url("/card/email")).respond(202)
     r["card"] = router.get(url__regex=url("/card")).respond(json=fx("card"))
     r["search"] = router.get(url__regex=url("/drugs/search")).respond(json=fx("search"))
+    r["suggest"] = router.get(url__regex=url("/drugs/suggest")).respond(json=fx("suggest"))
+    r["geocode"] = router.post(url__regex=url("/geocode")).respond(json=fx("geocode"))
     r["options"] = router.get(url__regex=url("/drugs/[^/]+/options")).respond(json=fx("options"))
     r["card_prices"] = router.get(url__regex=url("/drugs/[^/]+/card-prices")).respond(json=fx("card_prices"))
     r["near"] = router.post(url__regex=url("/prices/near")).respond(json=fx("prices_near"))

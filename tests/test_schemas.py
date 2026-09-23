@@ -16,6 +16,17 @@ CASES = [
     ("ui_nearby", {"zip": "33101", "family": "publix", "slug": "atorvastatin-calcium"}, "pharmacies"),
     ("get_savings_card", {}, "card"),
     ("get_savings_card", {"drug": "atorvastatin-calcium"}, "card"),
+    # MCP 2.1 (phase 2)
+    ("open_price_finder", {}, "search"),
+    ("open_price_finder", {"query": "atorva"}, "search"),
+    ("find_us_equivalent", {"brand": "Нурофен"}, "equivalent"),
+    ("find_us_equivalent", {"brand": "Нурофен", "locale": "ar"}, "equivalent"),
+    ("get_prescription_options", {"drug": "atorvastatin"}, "rx"),
+    ("get_prescription_options", {}, "rx"),
+    ("get_prescription_options", {"drug": "oxycodone"}, "rx"),
+    ("ui_prices", {"slug": "atorvastatin-calcium", "where": "233 S Wacker Dr, Chicago"}, "prices"),
+    ("ui_nearby", {"where": "233 S Wacker Dr, Chicago"}, "pharmacies"),
+    ("ui_nearby", {"where": "Chicago, IL", "slug": "atorvastatin-calcium"}, "pharmacies"),
 ]
 
 
@@ -59,5 +70,5 @@ async def test_error_envelope_validates(api) -> None:
 
 def test_json_schema_exports() -> None:
     out = schemas.envelope_json_schema()
-    assert set(out) == {"prices", "pharmacies", "card"}
+    assert set(out) == {"prices", "pharmacies", "card", "search", "equivalent", "rx"}
     assert "schema" in out["prices"]["properties"]

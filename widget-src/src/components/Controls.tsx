@@ -1,6 +1,7 @@
-// Chips, the ZIP field and the "near {city} (approximate) · change ZIP" line —
-// the only inputs an inline card may carry (no free-text search: that would
-// duplicate the chat box, which the ChatGPT guidelines forbid).
+// Chips, the "where" field (ZIP, city or address) and the "near {city}
+// (approximate) · change location" line — the only inputs an inline card may
+// carry (no free-text search inline: that would duplicate the chat box, which
+// the ChatGPT guidelines forbid; the search field lives in fullscreen only).
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { useApp } from "../context";
@@ -11,6 +12,8 @@ export interface Chip {
   label: string;
   active: boolean;
   onPick: () => void;
+  /** A colour dot before the label (the map legend). */
+  swatch?: string;
 }
 
 /** Up to `max` chips; the rest (never the active one) in an "Other ▾" select. */
@@ -35,6 +38,7 @@ export function ChipRow({ chips, label, max = 4 }: { chips: Chip[]; label: strin
             if (!c.active) c.onPick();
           }}
         >
+          {c.swatch && <span class="sw" style={{ background: c.swatch }} aria-hidden="true" />}
           <span dir="ltr">{c.label}</span>
         </button>
       ))}
@@ -61,10 +65,28 @@ export function ChipRow({ chips, label, max = 4 }: { chips: Chip[]; label: strin
   );
 }
 
-export function ZipField({ onSubmit, autoFocus }: { onSubmit: (zip: string) => void; autoFocus?: boolean }) {
+/** What the "where" field hands back: a ZIP travels as `zip` (every server
+ * version takes it); anything else as `where` text, which only the app-only
+ * tools accept and the server geocodes — the widget never keeps it. */
+export type WhereInput = { zip: string } | { where: string };
+
+export function parseWhere(raw: string): WhereInput | null {
+  const text = raw.trim().replace(/\s+/g, " ");
+  const zip = /^(\d{5})(?:-\d{4})?$/.exec(text);
+  if (zip) return { zip: zip[1] };
+  // Digits only but not a ZIP ("787"), too short, or too long: not a place.
+  if (/^[\d\s-]+$/.test(text) || text.length < 2 || text.length > 200) return null;
+  return { where: text };
+}
+
+/** ZIP, city or address (contract C3'); the test ids stay `zip-*`. */
+export function WhereField({ onSubmit, autoFocus }: { onSubmit: (where: WhereInput) => void; autoFocus?: boolean }) {
   const { t, busy, userZip } = useApp();
   const input = useRef<HTMLInputElement>(null);
   const [invalid, setInvalid] = useState(false);
+  // An address (anything that is not a ZIP) leaves the frame once, for the US
+  // Census geocoder — say so under the field before it is sent.
+  const [addressLike, setAddressLike] = useState(false);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -77,63 +99,72 @@ export function ZipField({ onSubmit, autoFocus }: { onSubmit: (zip: string) => v
 
   function submit(event: Event) {
     event.preventDefault();
-    const zip = (input.current?.value || "").trim();
-    if (!/^\d{5}$/.test(zip)) {
-      setInvalid(true);
-      return;
-    }
-    setInvalid(false);
-    onSubmit(zip);
+    const where = parseWhere(input.current?.value || "");
+    setInvalid(!where);
+    if (where) onSubmit(where);
   }
+  const placeholder = t.alt(["wherePlaceholder", "zipPlaceholder"]);
 
   return (
     <form class="zip" onSubmit={submit} noValidate>
       <input
         ref={input}
         type="text"
-        inputMode="numeric"
-        autocomplete="postal-code"
-        maxLength={5}
-        pattern="[0-9]{5}"
-        dir="ltr"
-        placeholder={t("zipPlaceholder")}
-        aria-label={t("zipPlaceholder")}
+        autocomplete="off"
+        maxLength={200}
+        dir="auto"
+        placeholder={placeholder}
+        aria-label={placeholder}
         aria-invalid={invalid}
         defaultValue={userZip || ""}
         data-testid="zip-input"
+        onInput={(e) => {
+          const where = parseWhere((e.currentTarget as HTMLInputElement).value);
+          setAddressLike(!!where && "where" in where);
+        }}
       />
       <button type="submit" class="btn small" disabled={busy} data-testid="zip-go">
         {t("zipGo")}
       </button>
       {invalid && (
         <p class="status err" role="alert">
-          {t("zipInvalid")}
+          {t.alt(["whereInvalid", "zipInvalid"])}
+        </p>
+      )}
+      {addressLike && !invalid && (
+        <p class="small muted where-note" data-testid="where-note">
+          {t("whereNote")}
         </p>
       )}
     </form>
   );
 }
 
-/** "Near Austin, TX (approximate) · change ZIP", or the ZIP field itself. */
+/** "Austin, TX" / "78704" — city/state/ZIP only, never an address line. */
+export function placeOf(origin: Origin | null | undefined): string {
+  return [origin?.city, origin?.state].filter(Boolean).join(", ") || origin?.zip || "";
+}
+
+/** "Near Austin, TX (approximate) · change location", or the where field itself. */
 export function LocationLine({
   origin,
   needsZip,
-  onZip,
+  onWhere,
 }: {
-  origin: Origin | undefined;
+  origin: Origin | null | undefined;
   needsZip: boolean;
-  onZip: (zip: string) => void;
+  onWhere: (where: WhereInput) => void;
 }) {
   const { t } = useApp();
   const [editing, setEditing] = useState(false);
-  const place = [origin?.city, origin?.state].filter(Boolean).join(", ") || origin?.zip || "";
+  const place = placeOf(origin);
   const known = !needsZip && origin?.precision !== "none" && !!place;
 
   if (!known) {
     return (
       <div class="where">
-        <p class="notice">{t("needsZip")}</p>
-        <ZipField onSubmit={onZip} autoFocus={needsZip} />
+        <p class="notice">{t.alt(["needsWhere", "needsZip"])}</p>
+        <WhereField onSubmit={onWhere} autoFocus={needsZip} />
       </div>
     );
   }
@@ -144,10 +175,10 @@ export function LocationLine({
         {origin?.precision === "approx" ? ` ${t("approx")}` : ""}
         {" · "}
         <button type="button" class="link" aria-expanded={editing} onClick={() => setEditing(!editing)}>
-          {t("changeZip")}
+          {t.alt(["changeWhere", "changeZip"])}
         </button>
       </p>
-      {editing && <ZipField onSubmit={onZip} autoFocus />}
+      {editing && <WhereField onSubmit={onWhere} autoFocus />}
     </div>
   );
 }

@@ -15,6 +15,7 @@ asked for was never observed.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from finerx_mcp.labels import tr
@@ -26,6 +27,7 @@ TEXT_STORES = 5
 MAX_STORES = 24  # keeps data ≤ ~4 KB
 MAX_CONFIGS = 12
 MAX_QUANTITIES = 8
+_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,120}$")  # = client.SLUG_RE
 
 # The English phrases (kept as names for callers; the text builders read
 # ``labels.tr`` so every language gets its own).
@@ -61,7 +63,8 @@ def place_label(origin: dict | None, locale: str = "en") -> str | None:
     if not isinstance(origin, dict) or origin.get("precision") in (None, "none"):
         return None
     where = ", ".join(p for p in (origin.get("city"), origin.get("state")) if p)
-    if origin.get("precision") == "zip" and origin.get("zip"):
+    # A typed address is placed to the point, but we show only its ZIP area.
+    if origin.get("precision") in ("zip", "address") and origin.get("zip"):
         if where:
             return tr(locale, "placeZip", where=where, zip=origin["zip"])
         return tr(locale, "zipOnly", zip=origin["zip"])
@@ -288,6 +291,150 @@ def pharmacies_text(data: dict, locale: str = "en") -> str:
         lines.append(tr(locale, "noStock"))
         lines.append(tr(locale, "osm"))
     return "\n".join(lines)
+
+
+# --- phase 2: search / equivalent / rx (MCP 2.1, contract C2') -----------------------
+
+MAX_SUGGESTIONS = 8
+US_CLASSES = ("same_inn", "rx_alternative", "no_equivalent")
+_HTTPS = re.compile(r"^https://\S+$")
+
+
+def dated_price(value: Any) -> dict | None:
+    """``{amount, observedAt}`` — or None when either half is missing (an
+    amount never travels without its date)."""
+    if not isinstance(value, dict) or value.get("amount") is None or not value.get("observedAt"):
+        return None
+    return {"amount": value["amount"], "observedAt": value["observedAt"]}
+
+
+def suggestion(hit: dict) -> dict | None:
+    """One ``/drugs/suggest`` result → the search view's row (slug-shaped only)."""
+    slug = hit.get("slug")
+    if not isinstance(slug, str) or not _SLUG.match(slug) or not hit.get("name"):
+        return None
+    return {
+        "slug": slug,
+        "name": hit.get("name"),
+        "kind": hit.get("kind"),
+        "matchedAlias": hit.get("matchedAlias"),
+        "cardFrom": dated_price(hit.get("cardFrom")),
+    }
+
+
+def foreign_hit(brand: dict) -> dict | None:
+    """A foreign brand the text matched. The US product is named ONLY for
+    ``same_inn``: an ``rx_alternative`` is a different medicine (No-Spa is not
+    dicyclomine), so it never shows as "in the US: …" and never leads to that
+    drug's prices; ``no_equivalent`` has none."""
+    if not brand.get("brand"):
+        return None
+    cls = brand.get("usClass") if brand.get("usClass") in US_CLASSES else None
+    us_slug = brand.get("usSlug") if cls == "same_inn" else None
+    if not (isinstance(us_slug, str) and _SLUG.match(us_slug)):
+        us_slug = None
+    slug = brand.get("brandSlug")
+    return {
+        "brand": brand["brand"],
+        "brandSlug": slug if isinstance(slug, str) and _SLUG.match(slug) else None,
+        "countries": [c for c in brand.get("countries") or [] if isinstance(c, str)],
+        "usClass": cls,
+        "usSlug": us_slug,
+        "usName": brand.get("usName") if us_slug else None,
+    }
+
+
+def suggest_lists(api: dict) -> tuple[list[dict], list[dict]]:
+    """``GET /drugs/suggest`` → (results, foreignBrands), each ≤ 8."""
+    results = [r for r in (suggestion(h) for h in api.get("results") or [] if isinstance(h, dict)) if r]
+    foreign = [b for b in (foreign_hit(h) for h in api.get("foreignBrands") or [] if isinstance(h, dict)) if b]
+    return results[:MAX_SUGGESTIONS], foreign[:MAX_SUGGESTIONS]
+
+
+def search_text(
+    query: str | None, results: list[dict], foreign: list[dict], popular: list[dict], locale: str = "en"
+) -> str:
+    """What the model reads when the search opens (or a typeahead answers):
+    the matches with their dated "from" price, else the popular list."""
+    if not query:
+        names = ", ".join(p["name"] for p in popular)
+        return "\n".join((tr(locale, "searchOpened"), tr(locale, "searchPopular", names=names)))
+    if not results and not foreign:
+        return tr(locale, "searchNoMatch", query=query)
+    lines = [tr(locale, "searchOpenedFor", query=query)]
+    for r in results:
+        cf = r.get("cardFrom")
+        price = (
+            tr(locale, "suggestFrom", price=money(cf["amount"]), date=cf["observedAt"])
+            if cf
+            else tr(locale, "noCardPriceYet")
+        )
+        lines.append(f"- {r['name']} ({r.get('kind') or '—'}) — slug {r['slug']} — {price}")
+    for b in foreign:
+        lines.append("- " + tr(locale, "foreignSuggest", brand=b["brand"], countries=", ".join(b["countries"])))
+    return "\n".join(lines)
+
+
+def equivalent_data(entry: dict, us: dict | None) -> dict:
+    """``/analogs/{brand}`` → ``equivalent.data``. ``guidance`` and
+    ``disclaimer`` are the API's sentences, verbatim; ``us`` only for
+    ``same_inn`` (the caller passes it only then)."""
+    cls = entry.get("usClass") if entry.get("usClass") in US_CLASSES else None
+    return {
+        "brand": entry.get("brand"),
+        "countries": [c for c in entry.get("countries") or [] if isinstance(c, str)],
+        "inn": entry.get("inn"),
+        "usClass": cls,
+        "guidance": entry.get("guidance"),
+        "disclaimer": entry.get("disclaimer"),
+        "us": us if cls == "same_inn" else None,
+    }
+
+
+def _option_line(opt: dict) -> str:
+    """``name: note (disclosure)`` — a partner's disclosure travels with it."""
+    line = str(opt.get("name") or "").strip()
+    if opt.get("note"):
+        line += f": {opt['note']}"
+    if opt.get("disclosure"):
+        line += f" ({opt['disclosure']})"
+    return line
+
+
+def _links(options: list) -> list[dict]:
+    out = []
+    for opt in options or []:
+        url = opt.get("url") if isinstance(opt, dict) else None
+        if isinstance(url, str) and _HTTPS.match(url) and opt.get("name"):
+            label = str(opt["name"])
+            if opt.get("disclosure"):
+                label += f" ({opt['disclosure']})"
+            out.append({"label": label, "url": url})
+    return out
+
+
+def rx_sections(api: dict, locale: str = "en") -> list[dict]:
+    """``/prescription-options`` → the rx view's three sections, as the API
+    wrote them (en/es text; the titles in the reader's language). Only https
+    links; every option line keeps its disclosure."""
+    sections: list[dict] = []
+    have = api.get("havePrescription") or {}
+    if have.get("summary"):
+        steps = [f"{i}. {s}" for i, s in enumerate(have.get("steps") or [], 1)]
+        sections.append({"title": tr(locale, "rxHave"), "body": "\n".join([have["summary"], *steps]), "links": []})
+    none = api.get("noPrescription") or {}
+    if none.get("summary"):
+        opts = [o for o in none.get("options") or [] if isinstance(o, dict)]
+        body = [none["summary"], *(f"- {_option_line(o)}" for o in opts if o.get("name"))]
+        if api.get("medicaidNote"):
+            body.append(api["medicaidNote"])
+        sections.append({"title": tr(locale, "rxNone"), "body": "\n".join(body), "links": _links(opts)})
+    costly = api.get("brandCostly") or {}
+    if costly.get("summary"):
+        opts = [o for o in costly.get("options") or [] if isinstance(o, dict)]
+        body = [costly["summary"], *(f"- {_option_line(o)}" for o in opts if o.get("name"))]
+        sections.append({"title": tr(locale, "rxBrand"), "body": "\n".join(body), "links": _links(opts)})
+    return sections[:3]
 
 
 # --- envelope ------------------------------------------------------------------------

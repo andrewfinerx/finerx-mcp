@@ -7,7 +7,10 @@ id) on every call, and ``hosts.subject_key`` turns it into an HMAC.
 
 * model-facing tools: token bucket **30/min** + a UTC-day cap of **400** per subject;
 * app-only ``ui_*`` tools (chips, ZIP field — a person clicking): **90/min**;
-* no subject (Claude and every other host): ONE shared bucket, **300/min**;
+* no subject (Claude and every other host): ONE shared bucket, **300/min**,
+  and a SEPARATE shared one of **600/min** for the typeahead (``ui_suggest``,
+  kind ``suggest``) so people typing in Claude cannot starve each other's
+  prices; with a subject the typeahead shares the person's ``ui`` bucket;
 * and, over ALL callers together — subjects and the anonymous bucket alike —
   a ceiling of **600/min** on model tools and **1200/min** on ``ui_*``. A
   per-subject bucket alone is free to whoever mints subjects: rotating
@@ -33,6 +36,7 @@ MODEL_PER_MIN = 30
 MODEL_PER_DAY = 400
 UI_PER_MIN = 90
 ANON_PER_MIN = 300
+ANON_SUGGEST_PER_MIN = 600
 MODEL_GLOBAL_PER_MIN = 600
 UI_GLOBAL_PER_MIN = 1200
 MAX_KEYS = 20_000
@@ -84,11 +88,13 @@ class Limiter:
     def __init__(self) -> None:
         self._subjects: OrderedDict[str, _Subject] = OrderedDict()
         self._anon = _per_min(ANON_PER_MIN)
+        self._anon_suggest = _per_min(ANON_SUGGEST_PER_MIN)
         self._ceiling = {"model": _per_min(MODEL_GLOBAL_PER_MIN), "ui": _per_min(UI_GLOBAL_PER_MIN)}
 
     def reset(self) -> None:  # tests
         self._subjects.clear()
         self._anon = _per_min(ANON_PER_MIN)
+        self._anon_suggest = _per_min(ANON_SUGGEST_PER_MIN)
         self._ceiling = {"model": _per_min(MODEL_GLOBAL_PER_MIN), "ui": _per_min(UI_GLOBAL_PER_MIN)}
 
     def _subject(self, key: str) -> _Subject:
@@ -106,22 +112,24 @@ class Limiter:
         """The all-callers ceiling of ``kind``, checked after the caller's own
         bucket let the call through; on a refusal the caller's token goes back
         (a call that did not run should not count against the person)."""
-        wait = self._ceiling["ui" if kind == "ui" else "model"].take(mono)
+        wait = self._ceiling["ui" if kind in ("ui", "suggest") else "model"].take(mono)
         if wait:
             own.give_back()
             return max(1, math.ceil(wait))
         return 0
 
     def check(self, kind: str, subject: str | None, *, now: float | None = None) -> int:
-        """Admit one call of ``kind`` ("model" | "ui"). 0 = go, N = retry in N s."""
+        """Admit one call of ``kind`` ("model" | "ui" | "suggest"). 0 = go, N =
+        retry in N s. ``suggest`` is a ``ui`` call with its own anonymous bucket."""
         mono = time.monotonic() if now is None else now
         if subject is None:
-            wait = self._anon.take(mono)
+            bucket = self._anon_suggest if kind == "suggest" else self._anon
+            wait = bucket.take(mono)
             if wait:
                 return math.ceil(wait)
-            return self._within_ceiling(kind, mono, self._anon)
+            return self._within_ceiling(kind, mono, bucket)
         entry = self._subject(subject)
-        if kind == "ui":
+        if kind in ("ui", "suggest"):
             wait = entry.ui.take(mono)
             if wait:
                 return math.ceil(wait)

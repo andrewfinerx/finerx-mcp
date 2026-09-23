@@ -24,15 +24,20 @@ print) into every result except ``get_dataset_info``, and
 ``/drugs/{slug}/card-prices``) and never names a savings program
 (``flags.competitor_prices_enabled`` is false by default).
 
-**Views.** ``compare_prices``, ``find_nearby_pharmacies`` and
-``get_savings_card`` return a ``finerx.view/2`` envelope that the ONE widget
-``ui://finerx/v2/app.html`` draws (prices / pharmacies / card). Inside the card
-the person changes dose, quantity or ZIP through ``ui_prices`` / ``ui_nearby`` —
-app-only tools the model never sees (``_meta.ui.visibility = ["app"]``), which
-is how the card answers without spending a model turn.
+**Views.** ``compare_prices``, ``find_nearby_pharmacies``,
+``get_savings_card`` and (2.1) ``open_price_finder``, ``find_us_equivalent``,
+``get_prescription_options`` return a ``finerx.view/2`` envelope that the ONE
+widget ``ui://finerx/v2/app.html`` draws (prices / pharmacies / card / search /
+equivalent / rx). Inside the card the person searches, changes dose, quantity
+or place through ``ui_suggest`` / ``ui_prices`` / ``ui_nearby`` — app-only
+tools the model never sees (``_meta.ui.visibility = ["app"]``), which is how
+the card answers without spending a model turn. Only those app-only tools take
+a place as TEXT (``where``: a ZIP, a city or an address); it goes once into
+the body of ``POST /prices/near`` or ``POST /geocode`` and nowhere else.
 
 **Privacy.** The one log line per call names the tool, the status, the time and
-the host class — never an argument, a ZIP, a coordinate or a subject. ChatGPT's
+the host class — never an argument, a ZIP, a typed place, a coordinate or a
+subject. ChatGPT's
 location hint is rounded to 0.01° on arrival and used for one API request.
 Per-person limits key on an HMAC of ``openai/subject`` (``limits``).
 
@@ -69,6 +74,7 @@ from finerx_mcp.labels import labels_for, tr
 from finerx_mcp.limits import LIMITER
 from finerx_mcp.widget import (
     APP_URI,
+    APP_URI_V21,
     WIDGET_MIME_TYPE,
     WIDGET_URI,
     build_id,
@@ -93,6 +99,7 @@ INSTRUCTIONS = """FineRx shows what US pharmacy chains were seen charging with t
 Which tool:
 - "How much is X / near me / in 10001": compare_prices(drug, strength?, form?, quantity?, zip?). Pass zip only when the person named a ZIP or a place you can map to one; otherwise leave it out (the host's approximate location or a national answer is used). The card price is set per chain (Walmart: per state), so the choice is the chain, not the address.
 - Pharmacies near a ZIP: find_nearby_pharmacies. Strengths and pack sizes of a drug: get_drug. A name to a slug: search_drugs.
+- The person wants to look a medicine up themselves, or asks to open FineRx: open_price_finder(query?) — the search opens inside the card.
 - The card: get_savings_card. To email it, ask for the address and an explicit yes first, then call email_savings_card.
 - A medicine from another country or in another script: find_us_equivalent FIRST; quote its guidance sentence as written; then compare_prices for usDrug.slug.
 - No prescription yet: get_prescription_options. Pages and the card exist in 12 languages (en, es, zh, vi, tl, ar, ko, ru, pt, ht, fr, tr): pass the person's language as locale.
@@ -105,7 +112,7 @@ The card is accepted at card.chainsCount pharmacy chains (say that number, not "
 
 For controlled or age-restricted medicines (stimulants such as Adderall, opioids, benzodiazepines and sleep medicines such as Xanax or Ambien, phentermine, testosterone, carisoprodol, pregabalin) give the card prices and the card only — no route to a prescription and no adjectives about savings.
 
-Hosts that render MCP Apps show prices, pharmacies and the card as an interactive card; still write the prices, dates and codes in your text for hosts and people that cannot see it.
+Hosts that render MCP Apps show prices, pharmacies and the card as an interactive card; still write the prices, dates and codes in your text for hosts and people that cannot see it. What the person picks inside the card (a medicine, dose, pack size, ZIP or city) reaches you as context from the card: build on that choice instead of asking again.
 
 Never give dosing or other medical advice. Attribute as "Prices via FineRx"."""
 
@@ -305,11 +312,12 @@ async def _base_card(locale: str, channel: str) -> dict[str, Any]:
     return await card_law.base_card(client(), locale, channel)
 
 
-async def _slug_for(text: Any, locale: str) -> str | None:
-    """The catalog slug for what the model passed: the text itself when it IS a
-    slug, else the site search's top hit for it — the free text travels in the
-    QUERY string (``/drugs/search?q=``), never in a path. None when nothing
-    matches. Raises ``FinerxApiError`` when the search itself fails."""
+async def _hit_for(text: Any, locale: str) -> dict[str, Any] | None:
+    """The catalog drug for what the model passed — ``{slug, name, kind}``: the
+    text itself when it IS a slug, else the site search's top hit for it — the
+    free text travels in the QUERY string (``/drugs/search?q=``), never in a
+    path. None when nothing matches. Raises ``FinerxApiError`` when the search
+    itself fails (and the text is not slug-shaped)."""
     if not isinstance(text, str) or not text.strip():
         return None
     # A plain name can LOOK like a slug ("atorvastatin") while the catalog slug
@@ -324,12 +332,25 @@ async def _slug_for(text: Any, locale: str) -> str | None:
         )
     except FinerxApiError:
         if slug:
-            return slug
+            return {"slug": slug, "name": None, "kind": None}
         raise
-    hits = [h for h in (valid_slug(r.get("slug")) for r in data.get("results") or []) if h]
-    if slug and slug in hits:
-        return slug
-    return hits[0] if hits else slug
+    hits = [
+        {"slug": r["slug"], "name": r.get("name"), "kind": r.get("kind")}
+        for r in data.get("results") or []
+        if isinstance(r, dict) and valid_slug(r.get("slug"))
+    ]
+    for hit in hits:
+        if slug and hit["slug"] == slug:
+            return hit
+    if hits:
+        return hits[0]
+    return {"slug": slug, "name": None, "kind": None} if slug else None
+
+
+async def _slug_for(text: Any, locale: str) -> str | None:
+    """``_hit_for`` reduced to the slug."""
+    hit = await _hit_for(text, locale)
+    return hit["slug"] if hit else None
 
 
 _ZIP_RE = re.compile(r"^\s*(\d{5})(?:-\d{4})?\s*$")
@@ -367,6 +388,29 @@ def _zip_notice(locale: str) -> dict[str, str]:
     return {"code": "zip_invalid", "message": tr(locale, "zipInvalid")}
 
 
+_WHERE_MAX = 200  # = the API's limit on ``address``
+_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _clean_where(raw: Any) -> str | None:
+    """The place typed in the card's "where" field (a ZIP, a city, an address),
+    tidied for ONE request body — or None. Never logged, echoed or stored."""
+    if not isinstance(raw, str):
+        return None
+    text = " ".join(_CONTROL.sub(" ", raw).split())[:_WHERE_MAX].strip()
+    return text or None
+
+
+def _where_notice(locale: str) -> dict[str, str]:
+    """A typed place the API could not place: the view is drawn (national
+    prices / no stores) and says why — the text itself is not repeated."""
+    return {"code": "where_not_found", "message": tr(locale, "whereNotFound")}
+
+
+def _unplaced(origin: Any) -> bool:
+    return not isinstance(origin, dict) or origin.get("precision") in (None, "none")
+
+
 async def _view_failure(view: str, text: str, code: str, locale: str, channel: str) -> CallToolResult:
     """An envelope with no data and an ``error``: the widget shows its error state
     with the card strip; the model reads why."""
@@ -385,6 +429,10 @@ _VIEW_OF = {
     "find_nearby_pharmacies": "pharmacies",
     "ui_nearby": "pharmacies",
     "get_savings_card": "card",
+    "open_price_finder": "search",
+    "find_us_equivalent": "equivalent",
+    "ui_equivalent": "equivalent",
+    "get_prescription_options": "rx",
 }
 
 
@@ -436,9 +484,15 @@ async def _prices_answer(
     locale: str,
     channel: str,
     legacy: dict | None = None,
+    where: str | None = None,
 ) -> CallToolResult:
     """The whole "how much is X near me" answer: one ``POST /prices/near``, the
-    options for the chips, the card with the price that answer found."""
+    options for the chips, the card with the price that answer found.
+
+    The place, in this order: a valid ``zip``; ``where`` (a place typed in the
+    card — a ZIP in it travels as ``zip``, anything else as the body's
+    ``address``, which the API geocodes and drops); nothing when a malformed ZIP
+    was given; else the host's approximate location."""
     body: dict[str, Any] = {
         "drug": drug,
         "form": form,
@@ -447,14 +501,19 @@ async def _prices_answer(
         "locale": locale,
         "channel": channel,
     }
-    zip_bad = _zip_given(zip) and _clean_zip(zip) is None
+    typed = None if _clean_zip(zip) else _clean_where(where)
+    zip_bad = not typed and _zip_given(zip) and _clean_zip(zip) is None
     if z := _clean_zip(zip):
         body["zip"] = z
-    elif not zip_bad and (where := hosts.user_location(ctx)) is not None:
+    elif typed and (tz := _clean_zip(typed)):
+        body["zip"] = tz
+    elif typed:
+        body["address"] = typed
+    elif not zip_bad and (here := hosts.user_location(ctx)) is not None:
         # Rounded to 0.01° already; used for this one request only. Never when
         # the person named a ZIP, even a malformed one: they asked about THAT
         # place, and a location they did not give would answer another.
-        body["lat"], body["lon"] = where.lat, where.lon
+        body["lat"], body["lon"] = here.lat, here.lon
     direction = hosts.text_dir(locale)
     base = await _base_card(locale, channel)
     try:
@@ -485,6 +544,11 @@ async def _prices_answer(
         # No place was sent, so the API answered nationally with needsZip.
         data["needsZip"] = True
         notice = _zip_notice(locale)
+        text = f"{notice['message']}\n{text}"
+    elif "address" in body and _unplaced(near.get("origin")):
+        # The typed place could not be placed: national prices, and why.
+        data["needsZip"] = True
+        notice = _where_notice(locale)
         text = f"{notice['message']}\n{text}"
     structured = views.envelope(
         "prices", locale=locale, direction=direction, card=card_view, data=data, notice=notice
@@ -547,6 +611,26 @@ _CARD_META: dict[str, Any] = {
     "openai/outputTemplate": APP_URI,
     "openai/toolInvocation/invoking": "Getting your free FineRx card…",
     "openai/toolInvocation/invoked": "Here is your free FineRx card",
+}
+# The 2.1 views (search / equivalent / rx) under their own uri — see
+# widget.APP_URI_V21: a host holding the 2.0 HTML for APP_URI cannot draw them.
+_SEARCH_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V21},
+    "openai/outputTemplate": APP_URI_V21,
+    "openai/toolInvocation/invoking": "Opening the FineRx search…",
+    "openai/toolInvocation/invoked": "FineRx search is open",
+}
+_EQUIVALENT_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V21},
+    "openai/outputTemplate": APP_URI_V21,
+    "openai/toolInvocation/invoking": "Looking up the US name…",
+    "openai/toolInvocation/invoked": "US name found",
+}
+_RX_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V21},
+    "openai/outputTemplate": APP_URI_V21,
+    "openai/toolInvocation/invoking": "Finding routes to a prescription…",
+    "openai/toolInvocation/invoked": "Routes to a prescription",
 }
 # App-only: the widget calls these, the model never sees them, and they carry no
 # template (a template on every call would re-render the iframe each time).
@@ -645,13 +729,15 @@ async def ui_prices(
     strength: str | None = None,
     quantity: int | None = None,
     zip: str | None = None,
+    where: str | None = None,
     locale: str | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
-    """Card prices for another dose, quantity or ZIP — called by the FineRx card itself.
+    """Card prices for another dose, quantity or place — called by the FineRx card itself.
 
     Same answer as compare_prices, for the package and place picked inside the
-    card. Not for the model.
+    card. ``where`` is the place as typed in the card (a ZIP, a city or an
+    address): used for this one request, never stored. Not for the model.
     """
     loc = hosts.resolve_locale(locale, ctx)
     return await _prices_answer(
@@ -661,6 +747,7 @@ async def ui_prices(
         strength=strength,
         quantity=quantity,
         zip=zip,
+        where=where,
         locale=loc,
         channel=hosts.default_channel(ctx),
     )
@@ -672,6 +759,43 @@ def _families(*raw: Any) -> list[str]:
         if isinstance(value, str):
             out += [p.strip().lower() for p in value.split(",") if p.strip()]
     return list(dict.fromkeys(out))
+
+
+def _coord(value: Any) -> float | None:
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return None
+
+
+async def _nearby_from_origin(origin: dict, families: list[str], limit: int) -> dict | None:
+    """Stores around a place ``POST /geocode`` returned; None when it placed
+    nothing. The origin shown is its ZIP / city / state — no coordinates."""
+    precision = origin.get("precision")
+    if precision not in ("address", "zip", "approx"):
+        return None
+    params: dict[str, Any] = {"limit": max(1, min(int(limit or 3), 10))}
+    lat, lon = _coord(origin.get("lat")), _coord(origin.get("lon"))
+    zip_ = _clean_zip(origin.get("zip"))
+    if precision == "zip" and zip_:
+        params["zip"] = zip_
+    elif lat is not None and lon is not None:
+        params["lat"], params["lon"] = lat, lon
+    elif zip_:
+        params["zip"] = zip_
+    else:
+        return None
+    if families:
+        params["family"] = ",".join(families)
+    nearby = await client().get("/pharmacies/nearby", params)
+    data = views.pharmacies_from_nearby(nearby, precision=precision)
+    data["origin"] = {
+        "zip": zip_,
+        "city": origin.get("city"),
+        "state": origin.get("state"),
+        "precision": precision,
+    }
+    return data
 
 
 async def _pharmacies_answer(
@@ -686,15 +810,22 @@ async def _pharmacies_answer(
     limit: int,
     locale: str,
     channel: str,
+    where: str | None = None,
 ) -> CallToolResult:
     direction = hosts.text_dir(locale)
     base = await _base_card(locale, channel)
     z = _clean_zip(zip)
-    zip_bad = _zip_given(zip) and z is None
+    # A place typed in the card (app-only ``where``): a ZIP in it is a ZIP; any
+    # other text goes once into a POST body (/prices/near or /geocode).
+    typed = None if z else _clean_where(where)
+    if typed and (tz := _clean_zip(typed)):
+        z, typed = tz, None
+    zip_bad = not typed and _zip_given(zip) and z is None
     # A malformed ZIP the person gave is answered as "no place" — never with
     # the host's approximate location instead.
-    where = None if (z or zip_bad) else hosts.user_location(ctx)
+    here = None if (z or zip_bad or typed) else hosts.user_location(ctx)
     restricted = card_law.is_restricted(drug)
+    unplaced = False
     try:
         if drug:
             body: dict[str, Any] = {
@@ -707,19 +838,33 @@ async def _pharmacies_answer(
             }
             if z:
                 body["zip"] = z
-            elif where is not None:
-                body["lat"], body["lon"] = where.lat, where.lon
+            elif typed:
+                body["address"] = typed
+            elif here is not None:
+                body["lat"], body["lon"] = here.lat, here.lon
             near = await client().post("/prices/near", body)
             d = near.get("drug") or {}
             restricted = restricted or card_law.is_restricted(d.get("slug"), d.get("name"))
             card = card_law.merge_api_card(near.get("card"), base)
             data = views.pharmacies_from_near(near, families)
-        elif z or where is not None:
+            unplaced = bool(typed) and _unplaced(near.get("origin"))
+        elif typed:
+            # No drug: the typed place → POST /geocode (the text in the body,
+            # once), then the stores around what came back — its ZIP, or its
+            # point rounded to 0.01° (the API rounds too). The text itself goes
+            # nowhere else.
+            geo = (await client().post("/geocode", {"address": typed, "locale": locale})).get("origin") or {}
+            card = base
+            data = await _nearby_from_origin(geo, families, limit)
+            unplaced = data is None
+            if data is None:
+                data = {"drug": None, "package": None, "origin": {"precision": "none"}, "stores": [], "families": []}
+        elif z or here is not None:
             params: dict[str, Any] = {"limit": max(1, min(int(limit or 3), 10))}
             if z:
                 params["zip"] = z
             else:
-                params["lat"], params["lon"] = where.lat, where.lon  # type: ignore[union-attr]
+                params["lat"], params["lon"] = here.lat, here.lon  # type: ignore[union-attr]
             if families:
                 params["family"] = ",".join(families)
             nearby = await client().get("/pharmacies/nearby", params)
@@ -744,7 +889,7 @@ async def _pharmacies_answer(
 
     card_view = card_law.to_view(card, locale=locale, restricted=restricted)
     text = views.pharmacies_text(data, locale)
-    notice = _zip_notice(locale) if zip_bad else None
+    notice = _zip_notice(locale) if zip_bad else _where_notice(locale) if unplaced else None
     if notice:
         text = f"{notice['message']}\n{text}"
     structured = views.envelope(
@@ -813,12 +958,14 @@ async def ui_nearby(
     form: str | None = None,
     strength: str | None = None,
     quantity: int | None = None,
+    where: str | None = None,
     locale: str | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
-    """Pharmacies near a ZIP for the package on screen — called by the FineRx card itself.
+    """Pharmacies near a place for the package on screen — called by the FineRx card itself.
 
-    Not for the model.
+    ``where`` is the place as typed in the card (a ZIP, a city or an address):
+    used for this one request, never stored. Not for the model.
     """
     loc = hosts.resolve_locale(locale, ctx)
     return await _pharmacies_answer(
@@ -832,7 +979,147 @@ async def ui_nearby(
         limit=3,
         locale=loc,
         channel=hosts.default_channel(ctx),
+        where=where,
     )
+
+
+# --- the search (MCP 2.1): a card where the person types the medicine -------------
+
+# "Often searched" in the search view: eight of the most-prescribed medicines
+# in the catalog (by prescription volume), none of them controlled or
+# age-restricted (checked against card_law in the tests).
+POPULAR: tuple[tuple[str, str], ...] = (
+    ("atorvastatin-calcium", "Atorvastatin"),
+    ("amlodipine-besylate", "Amlodipine"),
+    ("levothyroxine-sodium", "Levothyroxine"),
+    ("metformin-hcl", "Metformin"),
+    ("omeprazole", "Omeprazole"),
+    ("estradiol", "Estradiol"),
+    ("sildenafil-citrate", "Sildenafil"),
+    ("finasteride", "Finasteride"),
+)
+_QUERY_MIN, _QUERY_MAX = 2, 100  # = the API's bounds on ``q``
+
+
+def _popular() -> list[dict[str, str]]:
+    return [{"slug": slug, "name": name} for slug, name in POPULAR if not card_law.is_restricted(slug, name)]
+
+
+def _query(raw: Any) -> str | None:
+    if not isinstance(raw, str):
+        return None
+    text = " ".join(_CONTROL.sub(" ", raw).split())[:_QUERY_MAX]
+    return text or None
+
+
+def _suggestions_restricted(q: str | None, results: list[dict], foreign: list[dict]) -> bool:
+    """The card law drops its adjectives when ANY suggestion is a restricted
+    medicine — typed text alone misses "oxy" → Oxycodone, "adder" → Adderall."""
+    if card_law.is_restricted(q):
+        return True
+    for r in results:
+        if card_law.is_restricted(r.get("slug"), r.get("name"), r.get("matchedAlias")):
+            return True
+    for b in foreign:
+        if card_law.is_restricted(b.get("usSlug"), b.get("usName"), b.get("brand")):
+            return True
+    return False
+
+
+async def _suggest(q: str, locale: str) -> tuple[list[dict], list[dict]]:
+    """``GET /drugs/suggest`` → (results, foreignBrands); raises FinerxApiError."""
+    data = await client().get("/drugs/suggest", {"q": q, "limit": views.MAX_SUGGESTIONS, "locale": locale})
+    return views.suggest_lists(data)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Open the FineRx price finder", **_READ_HINTS),
+    meta=_SEARCH_META,
+    structured_output=False,
+)
+@_guarded("model")
+async def open_price_finder(
+    query: str | None = None,
+    locale: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """Open the FineRx search inside the card, so the person can look a medicine up themselves.
+
+    Use when the person asks to open FineRx, wants to search or browse on their
+    own, or is not sure of the name. Optional ``query`` pre-fills the search
+    (a medicine, a brand from another country, a misspelling). The card then
+    suggests matches as they type, each with where its card prices start and
+    the date, and a pick shows card prices by chain near a place they choose.
+
+    Returns the matches for ``query`` (if any), foreign brands that matched,
+    a few often-searched medicines, and the card. What the person picks in the
+    card reaches you as context. Hosts without MCP Apps get the matches as text.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = hosts.default_channel(ctx)
+    base = await _base_card(loc, chan)
+    q = _query(query)
+    q = q if q and len(q) >= _QUERY_MIN else None
+    results: list[dict] = []
+    foreign: list[dict] = []
+    if q:
+        try:
+            results, foreign = await _suggest(q, loc)
+        except FinerxApiError:
+            pass  # the search still opens; the person types again
+    popular = _popular()
+    restricted = _suggestions_restricted(q, results, foreign)
+    card_view = card_law.to_view(base, locale=loc, restricted=restricted)
+    data = {"query": q, "suggestions": results, "foreignBrands": foreign, "popular": popular, "origin": None}
+    structured = views.envelope("search", locale=loc, direction=hosts.text_dir(loc), card=card_view, data=data)
+    text = views.search_text(q, results, foreign, popular, loc)
+    return _result(text, structured, locale=loc, channel=chan, ui=True)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Suggest medicines as you type", **_READ_HINTS),
+    meta=_APP_ONLY_META,
+    structured_output=False,
+)
+@_guarded("suggest")
+async def ui_suggest(
+    q: str,
+    locale: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """Medicines matching what the person is typing in the FineRx search — called by the card itself.
+
+    Up to eight matches with where their card prices start (dated), and foreign
+    brands that matched. Not for the model.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = hosts.default_channel(ctx)
+    base = await _base_card(loc, chan)
+    text_q = _query(q)
+    results: list[dict] = []
+    foreign: list[dict] = []
+    failed = False
+    if text_q and len(text_q) >= _QUERY_MIN:
+        try:
+            results, foreign = await _suggest(text_q, loc)
+        except FinerxApiError:
+            failed = True
+    # The widget draws THIS card under the results (a restricted medicine among
+    # them → the law without its adjectives).
+    card_view = card_law.to_view(base, locale=loc, restricted=_suggestions_restricted(text_q, results, foreign))
+    structured: dict[str, Any] = {"results": results, "foreignBrands": foreign, "card": card_view}
+    if failed:
+        structured["error"] = {"code": "api_unavailable"}
+        text = tr(loc, "loadFailed")
+    else:
+        text = views.search_text(text_q, results, foreign, [], loc) if text_q else tr(loc, "searchOpened")
+    # No labels: this runs on every keystroke, and the card already holds them
+    # from the answer that opened the search (4-6 KB per call otherwise).
+    result = _result(text, structured, locale=loc, channel=chan, ui=False)
+    # The search field shows "that didn't load" on an error result; the model
+    # never sees this tool.
+    result.isError = failed
+    return result
 
 
 # The PNG is the same image for everyone, so it is fetched once per PROCESS and
@@ -1012,8 +1299,15 @@ async def email_savings_card(
         error = "consent required: ask the person to confirm they want the card emailed to this address"
         structured = {"sent": False, "error": error, "card": card_view}
         return _result(f"Not sent — {error}.", structured, locale=loc, channel=chan)
+    # The hosted MCP reaches the API from ONE address, so the API's per-IP
+    # hourly cap was a ceiling for every assistant user together. API 1.5.0
+    # caps the MCP key per person instead: the HMAC of ``openai/subject`` (the
+    # raw subject never leaves ``hosts``). No subject → no header (one shared
+    # bucket at the old per-IP number).
+    subject = hosts.subject_key(ctx)
+    headers = {"X-FineRx-Subject": subject} if subject else None
     try:
-        await client().post("/card/email", {"email": email, "locale": loc, "consent": True})
+        await client().post("/card/email", {"email": email, "locale": loc, "consent": True}, headers=headers)
     except FinerxApiError as exc:
         structured = {
             "sent": False,
@@ -1272,7 +1566,29 @@ async def get_dataset_info(ctx: Context | None = None) -> CallToolResult:
     return _result(text, info, locale="en", channel="mcp", card=False)
 
 
-@mcp.tool(annotations=ToolAnnotations(title="How to get a prescription", **_READ_HINTS), structured_output=False)
+async def _drug_ref(text: Any, locale: str) -> tuple[dict | None, dict | None]:
+    """What the model named → (``{slug, name, kind}`` for a view, the drug's
+    ``/options``) — both None when nothing matched or the API is down. Free
+    text goes only into the search query."""
+    try:
+        hit = await _hit_for(text, locale)
+    except FinerxApiError:
+        return None, None
+    if not hit:
+        return None, None
+    options = await _options(hit["slug"], locale)
+    d = (options or {}).get("drug") or {}
+    name = d.get("name") or hit.get("name")
+    if not name:
+        return None, options
+    return {"slug": d.get("slug") or hit["slug"], "name": name, "kind": d.get("kind") or hit.get("kind")}, options
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="How to get a prescription", **_READ_HINTS),
+    meta=_RX_META,
+    structured_output=False,
+)
 @_guarded("model")
 async def get_prescription_options(
     locale: str | None = None,
@@ -1283,62 +1599,98 @@ async def get_prescription_options(
 
     Use when the person says they have no prescription, asks how to get one, or
     says the brand costs too much. Optional ``drug`` is a slug from
-    search_drugs. Returns three sections — havePrescription (steps),
-    noPrescription (clinics and telehealth, each with the disclosure to read out
-    when FineRx earns anything), brandCostly — plus a Medicaid note, and the
-    card. For controlled or age-restricted medicines it returns only
-    ``restricted: true``: FineRx shows card prices and the card for them, nothing
-    else. Not medical advice: never say what to take or at what dose.
+    search_drugs (a name works too). Returns three sections — havePrescription
+    (steps), noPrescription (clinics and telehealth, each with the disclosure
+    to read out when FineRx earns anything), brandCostly — plus a Medicaid
+    note, where the drug's card prices start (dated), and the card. For
+    controlled or age-restricted medicines it returns only ``restricted:
+    true``: FineRx shows card prices and the card for them, nothing else. Not
+    medical advice: never say what to take or at what dose.
     """
     loc = hosts.resolve_locale(locale, ctx)
     chan = hosts.default_channel(ctx)
+    direction = hosts.text_dir(loc)
     base = await _base_card(loc, chan)
-    if card_law.is_restricted(drug):
+    drug_ref, options = await _drug_ref(drug, loc) if drug else (None, None)
+    restricted = card_law.is_restricted(drug) or bool(
+        drug_ref and card_law.is_restricted(drug_ref["slug"], drug_ref["name"])
+    )
+    if restricted:
         card_view = card_law.to_view(base, locale=loc, restricted=True)
         note = tr(loc, "restrictedRx")
-        structured = {"locale": loc, "drug": drug, "restricted": True, "note": note, "card": card_view}
-        return _result(note, structured, locale=loc, channel=chan)
+        legacy = {"locale": loc, "drug": drug, "restricted": True, "note": note, "card": card_view}
+        data = {
+            "drug": drug_ref,
+            "restricted": True,
+            "note": note,
+            "sections": [],
+            "cardFrom": None,
+            "readerLocale": loc,
+        }
+        structured = {
+            **legacy,
+            **views.envelope("rx", locale=loc, direction=direction, card=card_view, data=data),
+        }
+        return _result(note, structured, locale=loc, channel=chan, ui=True)
     try:
-        data = await client().get("/prescription-options", {"locale": loc, "drug": drug})
+        api = await client().get("/prescription-options", {"locale": loc, "drug": drug})
     except FinerxApiError as exc:
         card_view = card_law.to_view(base, locale=loc)
-        return _result(
-            _api_error_text(exc, loc),
-            {"error": {"code": "api_unavailable"}, "card": card_view},
-            locale=loc,
-            channel=chan,
-        )
+        error = {"code": "api_unavailable"}
+        structured = {
+            "error": error,
+            "card": card_view,
+            **views.envelope("rx", locale=loc, direction=direction, card=card_view, data=None, error=error),
+        }
+        return _result(_api_error_text(exc, loc), structured, locale=loc, channel=chan, ui=True)
     card_view = card_law.to_view(base, locale=loc)
+    fcp = views.from_card_price(options)
     lines: list[str] = []
-    have = data.get("havePrescription") or {}
+    have = api.get("havePrescription") or {}
     if have.get("summary"):
         lines.append(f"**{tr(loc, 'havePrescription')}** {have['summary']}")
         lines += [f"{i}. {s}" for i, s in enumerate(have.get("steps") or [], 1)]
-    none = data.get("noPrescription") or {}
+    none = api.get("noPrescription") or {}
     if none.get("summary"):
         lines.append(f"**{tr(loc, 'noPrescription')}** {none['summary']}")
         for opt in none.get("options") or []:
             disclosure = f" ({opt['disclosure']})" if opt.get("disclosure") else ""
             lines.append(f"- {opt.get('name')}: {opt.get('note') or ''}{disclosure}".rstrip())
-    costly = data.get("brandCostly") or {}
+    costly = api.get("brandCostly") or {}
     if costly.get("summary"):
         lines.append(f"**{tr(loc, 'brandCostly')}** {costly['summary']}")
         for opt in costly.get("options") or []:
             lines.append(f"- {opt.get('name')}: {opt.get('note') or ''}".rstrip())
-    if note := data.get("medicaidNote"):
+    if note := api.get("medicaidNote"):
         lines.append(note)
-    structured = {
-        "locale": data.get("locale", loc),
-        "drug": data.get("drug"),
+    if fcp:
+        lines.append(
+            tr(loc, "rxCardFrom", price=views.money(fcp["amount"]), package=fcp.get("package"), date=fcp.get("observedAt"))
+        )
+    legacy = {
+        "locale": api.get("locale", loc),
+        "drug": api.get("drug"),
         "restricted": False,
-        "havePrescription": data.get("havePrescription"),
-        "noPrescription": data.get("noPrescription"),
-        "brandCostly": data.get("brandCostly"),
-        "medicaidNote": data.get("medicaidNote"),
-        "disclaimer": data.get("disclaimer"),
+        "havePrescription": api.get("havePrescription"),
+        "noPrescription": api.get("noPrescription"),
+        "brandCostly": api.get("brandCostly"),
+        "medicaidNote": api.get("medicaidNote"),
+        "disclaimer": api.get("disclaimer"),
         "card": card_view,
     }
-    return _result("\n".join(lines) or tr(loc, "noOptions"), structured, locale=loc, channel=chan)
+    data = {
+        "drug": drug_ref,
+        "restricted": False,
+        "note": None,
+        "sections": views.rx_sections(api, loc),
+        "cardFrom": views.dated_price(fcp),
+        # The reader's language (the widget's labels, numbers and dates): the
+        # top-level ``locale`` keeps its 2.0 meaning — the API's content
+        # language (en/es) — so the 2.0 fields win over the envelope's.
+        "readerLocale": loc,
+    }
+    structured = {**views.envelope("rx", locale=loc, direction=direction, card=card_view, data=data), **legacy}
+    return _result("\n".join(lines) or tr(loc, "noOptions"), structured, locale=loc, channel=chan, ui=True)
 
 
 # --- foreign brands: what my medicine is called in the US --------------------
@@ -1374,72 +1726,21 @@ def _pick_match(results: list[dict[str, Any]], country: str | None) -> dict[str,
     return results[0]
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(title="Find the US equivalent of a foreign medicine", **_READ_HINTS),
-    structured_output=False,
-)
-@_guarded("model")
-async def find_us_equivalent(
-    brand: str,
-    country: str | None = None,
-    locale: str | None = None,
-    channel: str | None = None,
-    ctx: Context | None = None,
+async def _equivalent_answer(
+    data: dict[str, Any],
+    others: list[dict[str, Any]],
+    *,
+    loc: str,
+    chan: str,
+    base: dict[str, Any],
 ) -> CallToolResult:
-    """What a medicine from another country is in the US, and its card price here.
-
-    Use when the person names a medicine that is not a US product — a brand from
-    home (No-Spa, Nurofen, Dolo-Neurobion, 999 Ganmaoling), a name in another
-    script (Но-шпа, 泰诺), or an ingredient the US calls something else
-    (paracetamol) — or asks "what is this called in the US?". Optional
-    ``country`` picks between brands of the same name sold in different places.
-
-    Returns the reviewed entry: ``usClass`` (``same_inn`` = the same active
-    ingredient is sold here, ``rx_alternative`` = it is not and the closest US
-    options need a prescription, ``no_equivalent`` = nothing here matches),
-    ``guidance`` (ONE vetted sentence, to be quoted word for word),
-    ``guidanceDisclaimer``, ``inn``, ``usGeneric``, ``usBrands``, ``rxStatus``,
-    ``usDrug`` (slug and the card price from which it was seen, with the date),
-    ``otherMatches`` for the same brand name in other countries, and the card.
-    ``found`` is false when nothing matched.
-
-    Next: quote ``guidance`` as written, then ``guidanceDisclaimer``. With a
-    ``usDrug``, compare_prices for its slug. Do not call the US drug the same
-    product or suggest swapping; for ``rx_alternative`` and ``no_equivalent``
-    name no substitute — send the person to a pharmacist or a doctor.
-    """
-    loc = hosts.resolve_locale(locale, ctx)
-    chan = _channel(channel, ctx)
-    base = await _base_card(loc, chan)
-    try:
-        found = await client().get("/analogs/search", {"q": brand, "limit": _BRAND_SEARCH_LIMIT, "locale": loc})
-        # Only a slug may reach the next request's path.
-        results = [r for r in found.get("results") or [] if valid_slug(r.get("brandSlug"))]
-        match = _pick_match(results, country) if results else None
-        data = (
-            await client().get(slug_path("/analogs/{}", match["brandSlug"]), {"locale": loc, "channel": chan})
-            if match
-            else None
-        )
-    except FinerxApiError as exc:
-        card_view = card_law.to_view(base, locale=loc)
-        return _result(
-            _api_error_text(exc, loc),
-            {"error": {"code": "api_unavailable"}, "card": card_view},
-            locale=loc,
-            channel=chan,
-        )
-    if data is None:
-        card_view = card_law.to_view(base, locale=loc)
-        hint = "no foreign brand matched; try the active ingredient with search_drugs"
-        return _result(
-            tr(loc, "noForeignMatch", brand=brand),
-            {"found": False, "hint": hint, "card": card_view},
-            locale=loc,
-            channel=chan,
-        )
+    """One reviewed ``/analogs/{brand}`` entry → the equivalent view (and the
+    2.0 fields of find_us_equivalent). ``others`` = the other brands the search
+    matched (none when the card asked for one brand by its slug)."""
+    direction = hosts.text_dir(loc)
     us_drug = data.get("usDrug") or None
-    fcp = views.from_card_price(await _options(us_drug.get("slug"), loc)) if us_drug else None
+    us_options = await _options(us_drug.get("slug"), loc) if us_drug else None
+    fcp = views.from_card_price(us_options)
     restricted = card_law.is_restricted(
         (us_drug or {}).get("slug"), data.get("usGeneric"), data.get("inn"), data.get("brand")
     )
@@ -1480,11 +1781,30 @@ async def find_us_equivalent(
         # rather than assume which one the person means.
         "otherMatches": [
             {"brand": r.get("brand"), "countries": r.get("countries"), "brandSlug": r.get("brandSlug")}
-            for r in results
-            if r.get("brandSlug") != match.get("brandSlug")
+            for r in others
         ],
         "card": card_view,
     }
+    # The view: the US product only for same_inn (views.equivalent_data), with
+    # the drug's name and kind as the catalog has them.
+    us_view = None
+    if us_out and valid_slug(us_out.get("slug")):
+        od = (us_options or {}).get("drug") or {}
+        us_view = {
+            "slug": us_out["slug"],
+            "name": od.get("name") or us_out.get("name") or us_out["slug"],
+            "kind": od.get("kind"),
+            "cardFrom": views.dated_price(fcp),
+        }
+    structured.update(
+        views.envelope(
+            "equivalent",
+            locale=loc,
+            direction=direction,
+            card=card_view,
+            data=views.equivalent_data(data, us_view),
+        )
+    )
     lines = [f"**{data.get('brand')}** ({', '.join(data.get('countries') or [])})"]
     if g := data.get("guidance"):
         lines.append(g)
@@ -1495,7 +1815,112 @@ async def find_us_equivalent(
     if structured["otherMatches"]:
         others = "; ".join(f"{m['brand']} ({', '.join(m.get('countries') or [])})" for m in structured["otherMatches"])
         lines.append(tr(loc, "sameBrandElsewhere", list=others))
-    return _result("\n".join(lines), structured, locale=loc, channel=chan)
+    return _result("\n".join(lines), structured, locale=loc, channel=chan, ui=True)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Find the US equivalent of a foreign medicine", **_READ_HINTS),
+    meta=_EQUIVALENT_META,
+    structured_output=False,
+)
+@_guarded("model")
+async def find_us_equivalent(
+    brand: str,
+    country: str | None = None,
+    locale: str | None = None,
+    channel: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """What a medicine from another country is in the US, and its card price here.
+
+    Use when the person names a medicine that is not a US product — a brand from
+    home (No-Spa, Nurofen, Dolo-Neurobion, 999 Ganmaoling), a name in another
+    script (Но-шпа, 泰诺), or an ingredient the US calls something else
+    (paracetamol) — or asks "what is this called in the US?". Optional
+    ``country`` picks between brands of the same name sold in different places.
+
+    Returns the reviewed entry: ``usClass`` (``same_inn`` = the same active
+    ingredient is sold here, ``rx_alternative`` = it is not and the closest US
+    options need a prescription, ``no_equivalent`` = nothing here matches),
+    ``guidance`` (ONE vetted sentence, to be quoted word for word),
+    ``guidanceDisclaimer``, ``inn``, ``usGeneric``, ``usBrands``, ``rxStatus``,
+    ``usDrug`` (slug and the card price from which it was seen, with the date),
+    ``otherMatches`` for the same brand name in other countries, and the card.
+    ``found`` is false when nothing matched.
+
+    Next: quote ``guidance`` as written, then ``guidanceDisclaimer``. With a
+    ``usDrug``, compare_prices for its slug. Do not call the US drug the same
+    product or suggest swapping; for ``rx_alternative`` and ``no_equivalent``
+    name no substitute — send the person to a pharmacist or a doctor.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = _channel(channel, ctx)
+    direction = hosts.text_dir(loc)
+    base = await _base_card(loc, chan)
+    try:
+        found = await client().get("/analogs/search", {"q": brand, "limit": _BRAND_SEARCH_LIMIT, "locale": loc})
+        # Only a slug may reach the next request's path.
+        results = [r for r in found.get("results") or [] if valid_slug(r.get("brandSlug"))]
+        match = _pick_match(results, country) if results else None
+        data = (
+            await client().get(slug_path("/analogs/{}", match["brandSlug"]), {"locale": loc, "channel": chan})
+            if match
+            else None
+        )
+    except FinerxApiError as exc:
+        card_view = card_law.to_view(base, locale=loc)
+        error = {"code": "api_unavailable"}
+        structured = {
+            "error": error,
+            "card": card_view,
+            **views.envelope("equivalent", locale=loc, direction=direction, card=card_view, data=None, error=error),
+        }
+        return _result(_api_error_text(exc, loc), structured, locale=loc, channel=chan, ui=True)
+    if data is None:
+        card_view = card_law.to_view(base, locale=loc)
+        hint = "no foreign brand matched; try the active ingredient with search_drugs"
+        # No data and no error: the card shows this text beside the card strip.
+        structured = {
+            "found": False,
+            "hint": hint,
+            "card": card_view,
+            **views.envelope("equivalent", locale=loc, direction=direction, card=card_view, data=None),
+        }
+        return _result(tr(loc, "noForeignMatch", brand=brand), structured, locale=loc, channel=chan, ui=True)
+    return await _equivalent_answer(
+        data, [r for r in results if r.get("brandSlug") != match.get("brandSlug")], loc=loc, chan=chan, base=base
+    )
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Open a foreign brand in the card", **_READ_HINTS),
+    meta=_APP_ONLY_META,
+    structured_output=False,
+)
+@_guarded("ui")
+async def ui_equivalent(
+    brand_slug: str,
+    locale: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """One foreign brand the person picked in the FineRx search — called by the card itself.
+
+    The same answer as find_us_equivalent for exactly that brand (its
+    ``brandSlug`` from ui_suggest): the reviewed guidance, word for word, and
+    the US product only when it has the same active ingredient. Not for the model.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = hosts.default_channel(ctx)
+    if not valid_slug(brand_slug):
+        return await _view_failure("equivalent", tr(loc, "noForeignMatch", brand="?"), "not_found", loc, chan)
+    base = await _base_card(loc, chan)
+    try:
+        data = await client().get(slug_path("/analogs/{}", brand_slug), {"locale": loc, "channel": chan})
+    except FinerxApiError as exc:
+        if exc.status_code == 404:
+            return await _view_failure("equivalent", tr(loc, "noForeignMatch", brand=brand_slug), "not_found", loc, chan)
+        return await _view_failure("equivalent", _api_error_text(exc, loc), "api_unavailable", loc, chan)
+    return await _equivalent_answer(data, [], loc=loc, chan=chan, base=base)
 
 
 @mcp.tool(
@@ -1565,8 +1990,9 @@ _APP_META: dict[str, Any] = {
     },
     "openai/widgetDomain": WIDGET_DOMAIN,
     "openai/widgetDescription": (
-        "Card prices by pharmacy chain with their dates, nearby pharmacies, and the free "
-        "FineRx card with its codes."
+        "Card prices by pharmacy chain with their dates, nearby pharmacies, a search for a "
+        "medicine, what a foreign medicine is called in the US, routes to a prescription, "
+        "and the free FineRx card with its codes."
     ),
     "openai/widgetPrefersBorder": True,
     "openai/widgetCSP": {"connect_domains": [], "resource_domains": []},
@@ -1578,12 +2004,31 @@ _APP_META: dict[str, Any] = {
     APP_URI,
     name="FineRx card prices app",
     title="FineRx",
-    description="The interactive FineRx card: prices by chain, nearby pharmacies, and the free card.",
+    description=(
+        "The interactive FineRx card: search, prices by chain, nearby pharmacies, the US name "
+        "of a foreign medicine, routes to a prescription, and the free card."
+    ),
     mime_type=WIDGET_MIME_TYPE,
     meta=_APP_META,
 )
 def app_widget() -> str:
     """The v2 bundle (static, self-contained, read once per process)."""
+    return load_app_html()
+
+
+@mcp.resource(
+    APP_URI_V21,
+    name="FineRx card prices app (2.1 views)",
+    title="FineRx",
+    description=(
+        "The interactive FineRx card with the 2.1 views: search, the US name of a foreign "
+        "medicine, routes to a prescription — plus prices, nearby pharmacies and the free card."
+    ),
+    mime_type=WIDGET_MIME_TYPE,
+    meta=_APP_META,
+)
+def app_widget_v21() -> str:
+    """The same bundle under the 2.1 uri, so no host shows a cached 2.0 copy for a 2.1 view."""
     return load_app_html()
 
 

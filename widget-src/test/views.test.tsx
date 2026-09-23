@@ -338,7 +338,7 @@ describe("states", () => {
 
   it("an unknown view falls back to the model text + the card", async () => {
     const result = fixture("card");
-    (result.structuredContent as any).view = "equivalent";
+    (result.structuredContent as any).view = "timeline"; // a view a newer server may add
     await renderWith(result);
     expect(screen.getByText(/BIN 610219 · PCN DRX/)).toBeTruthy();
     expect(screen.getByTestId("card-strip")).toBeTruthy();

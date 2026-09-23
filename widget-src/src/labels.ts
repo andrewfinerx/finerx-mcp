@@ -66,6 +66,46 @@ export const FALLBACK_LABELS: Labels = {
   close: "Close",
   noPriceShort: "no card price seen",
   priceAt: "{price} {withCard} at {name}",
+  // --- phase 2 (contract C2' labels: search / map / where / equivalent / rx)
+  where: "Where:",
+  wherePlaceholder: "ZIP, city or address",
+  changeWhere: "change location",
+  whereInvalid: "Enter a 5-digit ZIP code, a city or an address",
+  needsWhere: "Enter a ZIP code, a city or an address to see pharmacies near you. These are card prices by chain.",
+  whereNote: "An address is sent once to the US Census geocoder to find pharmacies nearby. We don't store it.",
+  inn: "Active ingredient",
+  searchTitle: "Find a medicine",
+  searchPlaceholder: "Medicine, or a brand from your country",
+  openSearch: "Search",
+  popular: "Often searched:",
+  searching: "Searching…",
+  noResults: "Nothing found. Try the active ingredient, or check the spelling.",
+  fromWithCard: "with card from {price} · {date}",
+  kindGeneric: "generic",
+  kindBrand: "brand",
+  foreignBrand: "foreign brand",
+  inUs: "in the US: {name}",
+  noUsProduct: "no US product listed",
+  backToSearch: "Back to search",
+  back: "Back",
+  onMap: "On the map",
+  listView: "List",
+  you: "You",
+  mapTitle: "Pharmacies on a map",
+  mapRange: "Range",
+  offMap: "{n} farther than {r} mi — in the list",
+  equivalentUs: "In the US",
+  usClassSameInn: "same active ingredient",
+  usClassRxAlternative: "not sold in the US as the same product",
+  usClassNoEquivalent: "no US equivalent",
+  sameInnNote: "Same active ingredient is not the same product — ask a pharmacist.",
+  pricesInUs: "Prices in the US",
+  rxTitle: "How to get a prescription: {name}",
+  rxTitleAny: "How to get a prescription",
+  rxRestricted:
+    "For this medicine FineRx shows only card prices and the free card. Discuss treatment with a licensed clinician.",
+  pricesWithCard: "Prices with the card",
+  withoutInsurance: "Without insurance:",
 };
 
 export function fill(template: string, vars?: Record<string, string | number>): string {
@@ -75,12 +115,22 @@ export function fill(template: string, vars?: Record<string, string | number>): 
   );
 }
 
-/** Payload labels first (non-empty strings only), English fallback second. */
-export function makeT(labels: Labels | null | undefined) {
-  return (key: string, vars?: Record<string, string | number>): string => {
-    const got = labels && typeof labels[key] === "string" && labels[key].trim() ? labels[key] : "";
-    return fill(got || FALLBACK_LABELS[key] || key, vars);
-  };
+export interface T {
+  (key: string, vars?: Record<string, string | number>): string;
+  /** The first of `keys` the PAYLOAD carries, else the English of the first:
+   * a phase-2 key ("changeWhere") falls back to the phase-1 one ("changeZip")
+   * an older server translated, before falling back to English. */
+  alt(keys: string[], vars?: Record<string, string | number>): string;
 }
 
-export type T = ReturnType<typeof makeT>;
+/** Payload labels first (non-empty strings only), English fallback second. */
+export function makeT(labels: Labels | null | undefined): T {
+  const got = (key: string) => (labels && typeof labels[key] === "string" && labels[key].trim() ? labels[key] : "");
+  const t = ((key: string, vars?: Record<string, string | number>) =>
+    fill(got(key) || FALLBACK_LABELS[key] || key, vars)) as T;
+  t.alt = (keys, vars) => {
+    for (const key of keys) if (got(key)) return fill(got(key), vars);
+    return t(keys[0], vars);
+  };
+  return t;
+}

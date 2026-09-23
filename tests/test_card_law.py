@@ -37,7 +37,21 @@ TOOL_ARGS: dict[str, dict] = {
     "get_prescription_options": {"drug": "atorvastatin-calcium"},
     "find_us_equivalent": {"brand": "Нурофен"},
     "foreign_brands_for_drug": {"slug": "ibuprofen"},
+    # MCP 2.1 (phase 2)
+    "open_price_finder": {"query": "atorva"},
+    "ui_suggest": {"q": "atorva"},
+    "ui_equivalent": {"brand_slug": "nurofen"},
 }
+# The same law with the phase-2 inputs that reach new code paths: a typed place
+# (app-only ``where``) on both refresh tools, and the search with no query.
+EXTRA_CASES: list[tuple[str, dict]] = [
+    ("ui_prices", {"slug": "atorvastatin-calcium", "where": "233 S Wacker Dr, Chicago"}),
+    ("ui_nearby", {"where": "233 S Wacker Dr, Chicago"}),
+    ("ui_nearby", {"where": "Chicago, IL", "slug": "atorvastatin-calcium"}),
+    ("open_price_finder", {}),
+    ("get_prescription_options", {"drug": "oxycodone"}),
+    ("find_us_equivalent", {"brand": "No-Spa"}),
+]
 META_ONLY = {"get_dataset_info"}  # the dataset, not a medicine: no card (contract)
 CARD_TOOLS = sorted(set(TOOL_ARGS) - META_ONLY)
 
@@ -75,6 +89,16 @@ async def test_card_law_holds_for_every_tool(api, name: str) -> None:
     assert card["fine"] and card["fine"] in text
     assert "BIN 610219 · PCN DRX · Group MYCARD3993" in text
     assert card["actions"]["smsBody"]
+
+
+@pytest.mark.parametrize("name,args", EXTRA_CASES)
+async def test_card_law_holds_for_phase2_inputs(api, name: str, args: dict) -> None:
+    result = await call(name, args)
+    text = text_of(result)
+    _check_words_and_dates(result, text)
+    card = result.structuredContent["card"]
+    assert card["codes"]["group"] == "MYCARD3993"
+    assert card["law"] in text and card["fine"] in text
 
 
 @pytest.mark.parametrize("name", CARD_TOOLS)

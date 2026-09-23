@@ -2,7 +2,14 @@
 
 import type { CardView, Envelope, Labels, ToolResultLike, ViewName } from "./types";
 
-export const KNOWN_VIEWS: ReadonlySet<string> = new Set<ViewName>(["prices", "pharmacies", "card"]);
+export const KNOWN_VIEWS: ReadonlySet<string> = new Set<ViewName>([
+  "prices",
+  "pharmacies",
+  "card",
+  "search",
+  "equivalent",
+  "rx",
+]);
 
 export type Interpreted =
   | { kind: "ready"; envelope: Envelope; labels: Labels | null }
@@ -36,7 +43,7 @@ function hasViewData(env: Envelope): boolean {
   const d = env.data;
   if (!isObject(d)) return false;
   if (env.view === "prices") return isObject(d.drug) && typeof d.drug.slug === "string";
-  return true; // pharmacies / card draw from partial data
+  return true; // pharmacies / card / search / equivalent / rx draw from partial data
 }
 
 export function interpret(result: ToolResultLike | null | undefined): Interpreted {

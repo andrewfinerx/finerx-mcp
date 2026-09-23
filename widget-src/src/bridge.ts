@@ -10,7 +10,7 @@
 import type { ToolResultLike } from "./types";
 
 export const PROTOCOL_VERSION = "2026-01-26";
-export const APP_INFO = { name: "finerx-app", version: "2.0.0" };
+export const APP_INFO = { name: "finerx-app", version: "2.1.0" };
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export type DisplayMode = "inline" | "fullscreen" | "pip";

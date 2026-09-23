@@ -1,0 +1,59 @@
+{
+ "results": [
+  {
+   "slug": "atorvastatin-calcium",
+   "name": "Atorvastatin Calcium",
+   "kind": "generic",
+   "matchedAlias": "atorvastatin",
+   "cardFrom": {
+    "amount": 9.0,
+    "observedAt": "2026-09-20"
+   }
+  },
+  {
+   "slug": "lipitor",
+   "name": "Lipitor",
+   "kind": "brand",
+   "matchedAlias": null,
+   "cardFrom": null
+  }
+ ],
+ "foreignBrands": [
+  {
+   "brand": "Atoris",
+   "brandSlug": "atoris",
+   "countries": [
+    "Russia",
+    "Slovenia"
+   ],
+   "usClass": "same_inn",
+   "usSlug": "atorvastatin-calcium",
+   "usName": "Atorvastatin Calcium"
+  },
+  {
+   "brand": "No-Spa",
+   "brandSlug": "no-spa",
+   "countries": [
+    "Russia"
+   ],
+   "usClass": "rx_alternative",
+   "usSlug": "dicyclomine-hcl",
+   "usName": "Dicyclomine HCl"
+  },
+  {
+   "brand": "Analgin",
+   "brandSlug": "analgin",
+   "countries": [
+    "Russia"
+   ],
+   "usClass": "no_equivalent",
+   "usSlug": null,
+   "usName": null
+  }
+ ],
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed estimates. Not medical advice.",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

@@ -1,0 +1,274 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Pharmacies near Austin, TX with the atorvastatin 40 mg card price."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "pharmacies",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "atorvastatin",
+        "name": "Atorvastatin"
+      },
+      "package": {
+        "form": "tablet",
+        "strength": "40 mg",
+        "quantity": 90,
+        "label": "40 mg tablet · 90 tablets"
+      },
+      "origin": {
+        "zip": "78704",
+        "city": "Austin",
+        "state": "TX",
+        "precision": "address"
+      },
+      "stores": [
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "address": "1101 S Congress Ave",
+          "city": "Austin",
+          "miles": 0.4,
+          "lat": 30.2505,
+          "lon": -97.7494,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "address": "1600 S Congress Ave",
+          "city": "Austin",
+          "miles": 0.8,
+          "lat": 30.2466,
+          "lon": -97.7502,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 13.05,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "heb",
+          "name": "H-E-B",
+          "address": "2400 S Congress Ave",
+          "city": "Austin",
+          "miles": 1.1,
+          "lat": 30.2397,
+          "lon": -97.7524,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 7.35,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "address": "3500 Guadalupe St",
+          "city": "Austin",
+          "miles": 2.4,
+          "lat": 30.3013,
+          "lon": -97.7395,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart Supercenter",
+          "address": "710 E Ben White Blvd",
+          "city": "Austin",
+          "miles": 2.6,
+          "lat": 30.2212,
+          "lon": -97.7607,
+          "kind": "store",
+          "price": {
+            "amount": 6.1,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "address": "2025 W Ben White Blvd",
+          "city": "Austin",
+          "miles": 3.1,
+          "lat": 30.2331,
+          "lon": -97.7893,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 13.05,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "albertsons",
+          "name": "Randalls",
+          "address": "3300 Bee Caves Rd",
+          "city": "Austin",
+          "miles": 3.3,
+          "lat": 30.2735,
+          "lon": -97.7967,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 11.2,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "address": "4501 S Lamar Blvd",
+          "city": "Austin",
+          "miles": 3.4,
+          "lat": 30.2303,
+          "lon": -97.7988,
+          "kind": "pharmacy",
+          "price": null
+        },
+        {
+          "family": "heb",
+          "name": "H-E-B",
+          "address": "6900 Brodie Ln",
+          "city": "Austin",
+          "miles": 5.6,
+          "lat": 30.2071,
+          "lon": -97.8268,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 7.35,
+            "observedAt": "2026-09-20"
+          }
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart Supercenter",
+          "address": "9500 S IH 35",
+          "city": "Austin",
+          "miles": 7.8,
+          "lat": 30.1612,
+          "lon": -97.7899,
+          "kind": "store",
+          "price": {
+            "amount": 6.1,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "costco",
+          "name": "Costco",
+          "address": "10401 Research Blvd",
+          "city": "Austin",
+          "miles": 9.7,
+          "lat": 30.3977,
+          "lon": -97.7461,
+          "kind": "store",
+          "price": {
+            "amount": 4.2,
+            "observedAt": "2026-09-21"
+          }
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "address": "12301 N Lamar Blvd",
+          "city": "Austin",
+          "miles": 12.4,
+          "lat": 30.4118,
+          "lon": -97.6856,
+          "kind": "pharmacy",
+          "price": {
+            "amount": 12.4,
+            "observedAt": "2026-09-20"
+          }
+        }
+      ],
+      "families": [
+        "albertsons",
+        "costco",
+        "cvs",
+        "heb",
+        "walgreens",
+        "walmart"
+      ],
+      "pricesWithoutStores": [
+        {
+          "family": "capsule",
+          "name": "Capsule",
+          "price": {
+            "amount": 9.8,
+            "observedAt": "2026-09-21"
+          }
+        }
+      ]
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 4.2,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $4.20 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 20–21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works.",
+      "zipPlaceholder": "ZIP code",
+      "where": "Where:",
+      "wherePlaceholder": "ZIP, city or address",
+      "changeWhere": "change location",
+      "searchTitle": "Find a medicine",
+      "searchPlaceholder": "Medicine, or a brand from your country",
+      "popular": "Often searched:",
+      "fromWithCard": "with card from {price} · {date}",
+      "foreignBrand": "foreign brand",
+      "inUs": "in the US: {name}",
+      "backToSearch": "Back to search",
+      "onMap": "On the map",
+      "listView": "List",
+      "pricesInUs": "Prices in the US",
+      "pricesWithCard": "Prices with the card"
+    },
+    "finerx/build": "p2fixt01"
+  }
+}

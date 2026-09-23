@@ -1,7 +1,7 @@
-// The `finerx.view/2` envelope (contract C2) as the widget reads it. Hand-kept
-// for phase 1; phase 2 replaces it with types.gen.ts exported from the MCP's
-// Pydantic schemas. Every field is treated as optional at runtime — the widget
-// must draw something sane from a partial or older payload.
+// The `finerx.view/2` envelope (contract C2, phase-2 views C2') as the widget
+// reads it. Hand-kept, mirroring the MCP's Pydantic schemas. Every field is
+// treated as optional at runtime — the widget must draw something sane from a
+// partial or older payload.
 
 export interface Price {
   amount: number;
@@ -65,7 +65,11 @@ export interface Origin {
   zip?: string | null;
   city?: string | null;
   state?: string | null;
-  precision?: "zip" | "approx" | "none";
+  /** "address" = geocoded from what the person typed in the "where" field (phase 2). */
+  precision?: "zip" | "approx" | "address" | "none";
+  /** Rounded to 0.01° by the API when present (the map centre); never stored. */
+  lat?: number | null;
+  lon?: number | null;
 }
 
 export interface Coverage {
@@ -112,6 +116,7 @@ export interface PharmaciesData {
   origin?: Origin;
   stores?: Store[];
   families?: string[];
+  pricesWithoutStores?: PriceRow[];
 }
 
 export interface CardData {
@@ -119,7 +124,74 @@ export interface CardData {
   priceWithCard?: PriceWithCard | null;
 }
 
-export type ViewName = "prices" | "pharmacies" | "card";
+/** One suggestion of `ui_suggest` / `open_price_finder` (contract C1'.1). */
+export interface Suggestion {
+  slug: string;
+  name: string;
+  kind?: string;
+  matchedAlias?: string | null;
+  cardFrom?: Price | null;
+}
+
+/** A brand from another country the query matched (C1'.1 `foreignBrands`). */
+export interface ForeignBrand {
+  brand: string;
+  brandSlug?: string;
+  countries?: string[];
+  usSlug?: string | null;
+  usName?: string | null;
+}
+
+export interface SuggestResult {
+  results?: Suggestion[];
+  foreignBrands?: ForeignBrand[];
+}
+
+export interface SearchData extends SuggestResult {
+  query?: string | null;
+  suggestions?: Suggestion[];
+  popular?: Drug[];
+  origin?: Origin | null;
+}
+
+export type UsClass = "same_inn" | "rx_alternative" | "no_equivalent";
+
+export interface EquivalentData {
+  brand?: string;
+  countries?: string[];
+  inn?: string | null;
+  usClass?: UsClass | string;
+  /** The reviewed sentence from the API. Shown VERBATIM. */
+  guidance?: string | null;
+  /** The API's "same ingredient is not the same product" sentence, when sent. */
+  disclaimer?: string | null;
+  us?: (Drug & { cardFrom?: Price | null }) | null;
+}
+
+export interface RxLink {
+  label: string;
+  url: string;
+}
+
+export interface RxSection {
+  title?: string;
+  body?: string;
+  links?: RxLink[];
+}
+
+export interface RxData {
+  drug?: Drug | null;
+  restricted?: boolean;
+  /** Optional server wording of the restricted note. */
+  note?: string | null;
+  sections?: RxSection[];
+  cardFrom?: Price | null;
+  /** The reader's language; the envelope's `locale` of an rx answer keeps its
+   * 2.0 meaning (the content language, en/es). */
+  readerLocale?: string | null;
+}
+
+export type ViewName = "prices" | "pharmacies" | "card" | "search" | "equivalent" | "rx";
 
 export interface Envelope {
   schema: string;

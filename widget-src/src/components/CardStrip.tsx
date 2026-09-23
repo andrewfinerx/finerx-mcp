@@ -8,10 +8,17 @@ import { useApp } from "../context";
 import { FALLBACK_LAW, codesOf } from "../card";
 import type { CardView } from "../types";
 
+export interface SecondaryAction {
+  key: string;
+  label: string;
+  onClick: () => void;
+}
+
 interface Props {
   card: CardView | null | undefined;
-  /** The second of the two inline buttons. */
-  secondary: "allPharmacies" | "save";
+  /** The second of the two inline buttons: a view's own next step
+   * ("Prices in the US", "Prices with the card") or Save ▾. */
+  secondary: "allPharmacies" | "save" | SecondaryAction;
   onAllPharmacies?: () => void;
   /** Loading has no law yet — it arrives with the data, in the person's language. */
   withLaw?: boolean;
@@ -40,7 +47,11 @@ export function CardStrip({ card, secondary, onAllPharmacies, withLaw = true, fa
         <button type="button" class="btn primary" onClick={openCounter}>
           {t("showAtCounter")}
         </button>
-        {secondary === "allPharmacies" ? (
+        {typeof secondary === "object" ? (
+          <button type="button" class="btn" disabled={busy} data-testid={`action-${secondary.key}`} onClick={secondary.onClick}>
+            {secondary.label}
+          </button>
+        ) : secondary === "allPharmacies" ? (
           <button type="button" class="btn" disabled={busy} onClick={onAllPharmacies}>
             {t("allPharmacies")}
           </button>

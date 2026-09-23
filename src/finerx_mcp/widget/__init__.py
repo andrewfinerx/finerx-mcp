@@ -30,6 +30,11 @@ WIDGET_MIME_TYPE = "text/html;profile=mcp-app"
 # incompatible change is a NEW uri (v3) — hosts cache templates by uri.
 APP_URI = "ui://finerx/v2/app.html"
 APP_FILE = "app.v2.html"
+# MCP 2.1: the views a 2.0 bundle does not know (search / equivalent / rx) are
+# served under their OWN uri. A host that cached the 2.0 HTML for APP_URI would
+# otherwise draw them as its text fallback. The 2.0 tools keep APP_URI (their
+# metadata is unchanged); both uris serve the same, current bundle.
+APP_URI_V21 = "ui://finerx/v2.1/app.html"
 
 # 1.x uri, kept resolvable: a host holding a stale tools/list still finds a
 # component there (the v2 bundle, which draws view=card).
@@ -66,6 +71,7 @@ def build_id() -> str:
 __all__ = [
     "APP_FILE",
     "APP_URI",
+    "APP_URI_V21",
     "WIDGET_FILE",
     "WIDGET_MIME_TYPE",
     "WIDGET_URI",

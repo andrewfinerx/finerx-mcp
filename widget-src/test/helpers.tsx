@@ -12,6 +12,14 @@ export const FIXTURE_NAMES = [
   "pharmacies",
   "card",
   "error",
+  // phase 2 (contract C2')
+  "search",
+  "search-foreign",
+  "pharmacies-map",
+  "equivalent-same-inn",
+  "equivalent-no-equivalent",
+  "rx",
+  "rx-restricted",
 ] as const;
 
 const files = import.meta.glob("../fixtures/*.json", { eager: true, import: "default" }) as Record<string, ToolResultLike>;
@@ -70,8 +78,8 @@ export async function renderWith(result: ToolResultLike | null, bridge = mockBri
 }
 
 /** Let pending promises (tool calls) settle inside act(). */
-export async function flush() {
+export async function flush(ms = 0) {
   await act(async () => {
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, ms));
   });
 }

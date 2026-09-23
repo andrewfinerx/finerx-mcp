@@ -1,0 +1,15 @@
+{
+ "origin": {
+  "zip": "60606",
+  "city": "Chicago",
+  "state": "IL",
+  "precision": "address",
+  "lat": 41.88,
+  "lon": -87.64
+ },
+ "meta": {
+  "source": "FineRx",
+  "disclaimer": "Prices are observed estimates. Not medical advice.",
+  "docsUrl": "https://www.finerxfinder.com/en/developers"
+ }
+}

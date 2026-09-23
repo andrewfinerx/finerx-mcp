@@ -8,10 +8,22 @@ from mcp.shared.memory import create_connected_server_and_client_session
 
 from finerx_mcp import server
 from finerx_mcp.card_law import BANNED_RE
-from finerx_mcp.widget import APP_URI, WIDGET_MIME_TYPE, WIDGET_URI, load_app_html
+from finerx_mcp.widget import APP_URI, APP_URI_V21, WIDGET_MIME_TYPE, WIDGET_URI, load_app_html
 
-UI_TOOLS = {"compare_prices", "find_nearby_pharmacies", "get_savings_card"}
-APP_ONLY = {"ui_prices", "ui_nearby"}
+UI_TOOLS = {
+    "compare_prices",
+    "find_nearby_pharmacies",
+    "get_savings_card",
+    # MCP 2.1: the search, the foreign-brand and the prescription views
+    "open_price_finder",
+    "find_us_equivalent",
+    "get_prescription_options",
+}
+# The 2.0 tools keep the 2.0 uri (unchanged metadata); the 2.1 views get their
+# own, so a host that cached the 2.0 HTML never draws them as text.
+V21_TOOLS = {"open_price_finder", "find_us_equivalent", "get_prescription_options"}
+APP_ONLY = {"ui_prices", "ui_nearby", "ui_suggest", "ui_equivalent"}
+RAW_LOCATION = {"lat", "lon", "lng", "latitude", "longitude", "city", "address", "where", "state", "street"}
 # Other price programs / services: a tool description must never name, rank or
 # disparage one (review rule), nor name the card's own processor.
 COMPETITORS = re.compile(
@@ -50,7 +62,8 @@ async def test_ui_tools_point_at_the_v2_bundle() -> None:
     tools = await _tools()
     for name in UI_TOOLS:
         meta = tools[name].meta or {}
-        assert meta["ui"]["resourceUri"] == meta["openai/outputTemplate"] == APP_URI, name
+        uri = APP_URI_V21 if name in V21_TOOLS else APP_URI
+        assert meta["ui"]["resourceUri"] == meta["openai/outputTemplate"] == uri, name
         assert 0 < len(meta["openai/toolInvocation/invoking"]) <= 64
         assert 0 < len(meta["openai/toolInvocation/invoked"]) <= 64
 
@@ -78,11 +91,31 @@ async def test_the_widget_may_call_email() -> None:
     assert "app" in meta["ui"]["visibility"] and "model" in meta["ui"]["visibility"]
 
 
-async def test_no_tool_asks_for_raw_location_fields() -> None:
-    """Review rule: no lat/lng/city/address in an input schema (a ZIP is fine)."""
+async def test_no_model_tool_asks_for_raw_location_fields() -> None:
+    """Review rule: no lat/lng/city/address in a schema the model sees (a ZIP is
+    fine). Phase 2: a typed place (``where``) is taken ONLY by app-only tools."""
     for name, tool in (await _tools()).items():
         props = set((tool.inputSchema or {}).get("properties", {}))
-        assert not props & {"lat", "lon", "lng", "latitude", "longitude", "city", "address", "where"}, name
+        if name in APP_ONLY:
+            assert not props & (RAW_LOCATION - {"where"}), name
+        else:
+            assert not props & RAW_LOCATION, name
+
+
+async def test_where_is_offered_only_to_the_card_and_hidden_from_the_model() -> None:
+    tools = await _tools()
+    takes_where = {n for n, t in tools.items() if "where" in (t.inputSchema or {}).get("properties", {})}
+    assert takes_where == {"ui_prices", "ui_nearby"}
+    for name in takes_where:
+        meta = tools[name].meta or {}
+        assert meta["ui"]["visibility"] == ["app"]
+        assert meta["openai/visibility"] == "private" and meta["openai/widgetAccessible"] is True
+
+
+async def test_every_listed_tool_has_a_known_ui_role() -> None:
+    """A new tool must be classified: model view, app-only, or text-only."""
+    text_only = {"search_drugs", "get_drug", "get_dataset_info", "foreign_brands_for_drug", "email_savings_card"}
+    assert set(await _tools()) == UI_TOOLS | APP_ONLY | text_only
 
 
 async def test_descriptions_name_no_competitor_and_make_no_superlative() -> None:
@@ -92,7 +125,7 @@ async def test_descriptions_name_no_competitor_and_make_no_superlative() -> None
         assert not BANNED_RE.search(text), (name, BANNED_RE.search(text))
 
 
-@pytest.mark.parametrize("uri", [APP_URI, WIDGET_URI])
+@pytest.mark.parametrize("uri", [APP_URI, APP_URI_V21, WIDGET_URI])
 async def test_bundle_resource_meta(uri: str) -> None:
     res = (await _resources())[uri]
     assert res.mimeType == WIDGET_MIME_TYPE == "text/html;profile=mcp-app"
@@ -103,7 +136,7 @@ async def test_bundle_resource_meta(uri: str) -> None:
     assert re.fullmatch(r"[0-9a-f]{8}", meta["finerx/build"])
 
 
-@pytest.mark.parametrize("uri", [APP_URI, WIDGET_URI])
+@pytest.mark.parametrize("uri", [APP_URI, APP_URI_V21, WIDGET_URI])
 async def test_both_uris_serve_the_v2_bundle_with_its_meta(uri: str) -> None:
     async with create_connected_server_and_client_session(server.mcp._mcp_server) as session:
         got = await session.read_resource(uri)

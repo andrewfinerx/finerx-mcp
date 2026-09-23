@@ -1,0 +1,113 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "How to get a prescription for sildenafil."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "rx",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "sildenafil",
+        "name": "Sildenafil"
+      },
+      "restricted": false,
+      "sections": [
+        {
+          "title": "If you have a prescription",
+          "body": "You can fill it at any participating pharmacy and use the free discount card there. Prices differ between pharmacies for the same prescription, so compare before you choose.",
+          "links": []
+        },
+        {
+          "title": "If you don't have one yet",
+          "body": "A discount card cannot replace a prescription. Community health centers see patients on a sliding scale; telehealth and urgent care are other routes.",
+          "links": [
+            {
+              "label": "Find a community health center (HRSA)",
+              "url": "https://findahealthcenter.hrsa.gov/"
+            }
+          ]
+        },
+        {
+          "title": "If the brand costs too much",
+          "body": "For an expensive brand-name medication, check whether the manufacturer runs an assistance program before paying cash.",
+          "links": [
+            {
+              "label": "NeedyMeds",
+              "url": "https://www.needymeds.org/"
+            },
+            {
+              "label": "Medicine Assistance Tool (PhRMA)",
+              "url": "https://medicineassistancetool.org/"
+            }
+          ]
+        }
+      ],
+      "cardFrom": {
+        "amount": 9.5,
+        "observedAt": "2026-09-21"
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 9.5,
+        "family": "costco",
+        "name": "Costco",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $9.50 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works.",
+      "zipPlaceholder": "ZIP code",
+      "where": "Where:",
+      "wherePlaceholder": "ZIP, city or address",
+      "changeWhere": "change location",
+      "searchTitle": "Find a medicine",
+      "searchPlaceholder": "Medicine, or a brand from your country",
+      "popular": "Often searched:",
+      "fromWithCard": "with card from {price} · {date}",
+      "foreignBrand": "foreign brand",
+      "inUs": "in the US: {name}",
+      "backToSearch": "Back to search",
+      "onMap": "On the map",
+      "listView": "List",
+      "pricesInUs": "Prices in the US",
+      "pricesWithCard": "Prices with the card"
+    },
+    "finerx/build": "p2fixt01"
+  }
+}

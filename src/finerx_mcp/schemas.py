@@ -90,10 +90,14 @@ class Options(_M):
 
 
 class Origin(_M):
+    """Where the answer is for — never finer than a ZIP area / a city, and no
+    coordinates (a typed address comes back as its ZIP, city and state, with
+    ``precision: "address"``; phase 2)."""
+
     zip: str | None = None
     city: str | None = None
     state: str | None = None
-    precision: Literal["zip", "approx", "none"]
+    precision: Literal["zip", "approx", "address", "none"]
 
 
 class Coverage(_M):
@@ -153,6 +157,96 @@ class CardData(_M):
     priceWithCard: PriceWithCard | None = None
 
 
+# --- phase 2 (MCP 2.1, contract C2'): search / equivalent / rx ------------------
+
+
+class Suggestion(_M):
+    """One typeahead hit (API ``/drugs/suggest`` results): ``cardFrom`` = the
+    lowest family price of the drug's default package, with its date."""
+
+    slug: str
+    name: str
+    kind: str | None = None
+    matchedAlias: str | None = None
+    cardFrom: Price | None = None
+
+
+class ForeignBrandHit(_M):
+    """A brand from another country the text matched. ``usSlug``/``usName`` only
+    for ``same_inn`` (the same active ingredient is sold here): an
+    ``rx_alternative`` is a different medicine and is never offered as "the US
+    product" of the brand."""
+
+    brand: str
+    brandSlug: str | None = None
+    countries: list[str] = []
+    usClass: Literal["same_inn", "rx_alternative", "no_equivalent"] | None = None
+    usSlug: str | None = None
+    usName: str | None = None
+
+
+class SuggestResult(_M):
+    """``ui_suggest`` structuredContent (not an envelope: the search view calls
+    it as you type and keeps its own frame)."""
+
+    results: list[Suggestion] = Field(default=[], max_length=8)
+    foreignBrands: list[ForeignBrandHit] = Field(default=[], max_length=8)
+    card: CardView
+
+
+class SearchData(_M):
+    query: str | None = None
+    suggestions: list[Suggestion] = Field(default=[], max_length=8)
+    foreignBrands: list[ForeignBrandHit] = Field(default=[], max_length=8)
+    popular: list[DrugRef] = Field(default=[], max_length=8)
+    origin: Origin | None = None
+
+
+class UsProduct(_M):
+    slug: str
+    name: str
+    kind: str | None = None
+    cardFrom: Price | None = None
+
+
+class EquivalentData(_M):
+    brand: str | None = None
+    countries: list[str] = []
+    inn: str | None = None
+    usClass: Literal["same_inn", "rx_alternative", "no_equivalent"] | None = None
+    # The API's reviewed sentence, verbatim — never composed here.
+    guidance: str | None = None
+    # The API's "same active ingredient is not the same product" sentence.
+    disclaimer: str | None = None
+    # Only for same_inn: naming a US product for the other classes would be
+    # naming a substitute.
+    us: UsProduct | None = None
+
+
+class RxLink(_M):
+    label: str = Field(min_length=1)
+    url: str = Field(pattern=r"^https://\S+$")
+
+
+class RxSection(_M):
+    title: str
+    body: str
+    links: list[RxLink] = []
+
+
+class RxData(_M):
+    drug: DrugRef | None = None
+    restricted: bool
+    # The restricted sentence (only prices and the card; see a clinician).
+    note: str | None = None
+    sections: list[RxSection] = Field(default=[], max_length=3)
+    cardFrom: Price | None = None
+    # The reader's language (labels, numbers, dates). The envelope's top-level
+    # ``locale`` keeps get_prescription_options' 2.0 meaning: the API's content
+    # language (en/es).
+    readerLocale: str | None = None
+
+
 class ErrorInfo(_M):
     code: str
     message: str | None = None
@@ -161,9 +255,11 @@ class ErrorInfo(_M):
 
 
 class Notice(_M):
-    """Something to say about a view that IS drawn (unlike ``error``)."""
+    """Something to say about a view that IS drawn (unlike ``error``):
+    ``zip_invalid`` — the ZIP given is not 5 digits; ``where_not_found`` — the
+    typed place (``where``) could not be placed (phase 2)."""
 
-    code: Literal["zip_invalid"]
+    code: Literal["zip_invalid", "where_not_found"]
     message: str = Field(min_length=1)
 
 
@@ -193,10 +289,37 @@ class CardEnvelope(_Envelope):
     data: CardData | None = None
 
 
+class SearchEnvelope(_Envelope):
+    view: Literal["search"]
+    data: SearchData | None = None
+
+
+class _LegacyEnvelope(_Envelope):
+    """``find_us_equivalent`` and ``get_prescription_options`` answered with
+    their own keys in 2.0 (``found``, ``guidance``, ``havePrescription``, …).
+    2.1 draws them as views but keeps every 2.0 key beside the envelope — the
+    contract allows additions only."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+
+class EquivalentEnvelope(_LegacyEnvelope):
+    view: Literal["equivalent"]
+    data: EquivalentData | None = None
+
+
+class RxEnvelope(_LegacyEnvelope):
+    view: Literal["rx"]
+    data: RxData | None = None
+
+
 ENVELOPES: dict[str, type[_Envelope]] = {
     "prices": PricesEnvelope,
     "pharmacies": PharmaciesEnvelope,
     "card": CardEnvelope,
+    "search": SearchEnvelope,
+    "equivalent": EquivalentEnvelope,
+    "rx": RxEnvelope,
 }
 
 
@@ -207,5 +330,5 @@ def validate(structured: dict[str, Any]) -> _Envelope:
 
 
 def envelope_json_schema() -> dict[str, Any]:
-    """JSON Schema of the three envelopes (phase 2: → ``widget-src/src/types.gen.ts``)."""
+    """JSON Schema of the envelopes (phase 2: → ``widget-src/src/types.gen.ts``)."""
     return {name: model.model_json_schema(by_alias=True) for name, model in ENVELOPES.items()}

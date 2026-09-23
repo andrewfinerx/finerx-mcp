@@ -1,14 +1,23 @@
-// view=prices, inline (spec §4.1): package → chips → where → chains by card
-// price, each with its date and distance → the card strip. Two buttons only.
+// view=prices, inline (spec §4.1): package → chips → where (ZIP, city or
+// address) → chains by card price, each with its date and distance → the card
+// strip. Two buttons only.
 
 import { useApp } from "../context";
 import { CardStrip } from "../components/CardStrip";
-import { ChipRow, LocationLine, type Chip } from "../components/Controls";
+import { ChipRow, LocationLine, type Chip, type WhereInput } from "../components/Controls";
 import { day, hasPrice, miles, money, zoneLabel } from "../format";
 import { cleanArgs } from "../result";
-import type { ConfigOption, Envelope, PriceRow, PricesData } from "../types";
+import type { ConfigOption, Envelope, Origin, PriceRow, PricesData } from "../types";
 
 const INLINE_ROWS = 6;
+
+/** A ZIP goes back to the server only when the person gave it: named in the
+ * chat (precision "zip"), resolved from the place they typed ("address"), or
+ * typed here. An approximate origin (ChatGPT userLocation) stays the host's. */
+export function personZip(origin: Origin | null | undefined, userZip: string | null): string | null {
+  const given = origin && (origin.precision === "zip" || origin.precision === "address") ? origin.zip : null;
+  return given || userZip || null;
+}
 
 const same = (a?: string, b?: string) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 
@@ -23,11 +32,11 @@ export function PricesView({ env }: { env: Envelope }) {
   const coverage = data.coverage || {};
   const status = coverage.status || "exact";
 
-  // A ZIP goes back to the server only when a person gave it: typed here, or
-  // named in the chat (precision "zip"). An approximate origin stays the host's.
-  const knownZip = userZip || (origin?.precision === "zip" ? origin.zip : null);
+  const knownZip = personZip(origin, userZip);
 
-  function refine(patch: Record<string, unknown>, zip?: string) {
+  // A typed place goes out once: a ZIP as `zip`, anything else as `where`
+  // (geocoded by the server); later calls carry the ZIP it resolved to.
+  function refine(patch: Record<string, unknown>, where?: WhereInput) {
     return run(
       "ui_prices",
       cleanArgs({
@@ -36,8 +45,9 @@ export function PricesView({ env }: { env: Envelope }) {
         strength: pkg.strength,
         quantity: pkg.quantity,
         ...patch,
-        zip: zip || knownZip,
+        ...(where || { zip: knownZip }),
       }),
+      { typed: !!where },
     );
   }
 
@@ -77,7 +87,7 @@ export function PricesView({ env }: { env: Envelope }) {
       <ChipRow chips={doseChips} label={t("pricesTitle")} />
       <ChipRow chips={qtyChips} label={pkg.label || t("pricesTitle")} />
 
-      <LocationLine origin={origin} needsZip={!!data.needsZip} onZip={(zip) => refine({}, zip)} />
+      <LocationLine origin={origin} needsZip={!!data.needsZip} onWhere={(where) => refine({}, where)} />
 
       {status !== "exact" && <p class="notice">{t("noPrice")}</p>}
       {status === "other_quantities" && <OtherQuantities data={data} current={current} onPick={(q) => refine({ quantity: q })} />}

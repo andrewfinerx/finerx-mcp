@@ -191,7 +191,10 @@ class FinerxClient:
         clean = {k: v for k, v in (params or {}).items() if v is not None}
         return await self._send("GET", path, params=clean)
 
-    async def post(self, path: str, json: dict | None = None) -> dict:
-        """POST a JSON body. Same auth, same error shape as ``get``."""
+    async def post(self, path: str, json: dict | None = None, headers: dict[str, str] | None = None) -> dict:
+        """POST a JSON body. Same auth, same error shape as ``get``. ``headers``
+        adds request headers (``X-FineRx-Subject`` on the card email)."""
         body = {k: v for k, v in (json or {}).items() if v is not None}
-        return await self._send("POST", path, json=body, headers={"Content-Type": "application/json"})
+        return await self._send(
+            "POST", path, json=body, headers={"Content-Type": "application/json", **(headers or {})}
+        )

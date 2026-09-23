@@ -1,0 +1,91 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Concor (Russia, Germany): Concor contains bisoprolol."
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "equivalent",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "brand": "Concor",
+      "countries": [
+        "Russia",
+        "Germany"
+      ],
+      "inn": "bisoprolol",
+      "usClass": "same_inn",
+      "guidance": "Concor contains bisoprolol. In the US the same active ingredient is sold as bisoprolol fumarate (brands: Zebeta); ask the pharmacist for it by that name.",
+      "disclaimer": "Same active ingredient does not mean the same product: strength, form and excipients can differ. Confirm with a pharmacist. Not medical advice.",
+      "us": {
+        "slug": "bisoprolol-fumarate",
+        "name": "Bisoprolol Fumarate",
+        "kind": "generic",
+        "cardFrom": {
+          "amount": 9.62,
+          "observedAt": "2026-09-21"
+        }
+      }
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 9.62,
+        "family": "walmart",
+        "name": "Walmart",
+        "observedAt": "2026-09-21"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $9.62 (observed Sep 21, 2026), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed Sep 21, 2026 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 34,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=chatgpt",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=chatgpt",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    }
+  },
+  "_meta": {
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "copy": "Copy",
+      "copied": "Copied",
+      "notInsurance": "Not insurance",
+      "error": "Prices didn't load. The card still works.",
+      "zipPlaceholder": "ZIP code",
+      "where": "Where:",
+      "wherePlaceholder": "ZIP, city or address",
+      "changeWhere": "change location",
+      "searchTitle": "Find a medicine",
+      "searchPlaceholder": "Medicine, or a brand from your country",
+      "popular": "Often searched:",
+      "fromWithCard": "with card from {price} · {date}",
+      "foreignBrand": "foreign brand",
+      "inUs": "in the US: {name}",
+      "backToSearch": "Back to search",
+      "onMap": "On the map",
+      "listView": "List",
+      "pricesInUs": "Prices in the US",
+      "pricesWithCard": "Prices with the card"
+    },
+    "finerx/build": "p2fixt01"
+  }
+}
