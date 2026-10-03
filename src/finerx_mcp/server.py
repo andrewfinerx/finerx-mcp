@@ -67,7 +67,7 @@ import httpx
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 
-from finerx_mcp import __version__, card_law, hosts, views
+from finerx_mcp import __version__, card_law, hosts, next_steps, views
 from finerx_mcp.client import USER_AGENT, FinerxApiError, FinerxClient, slug_path, valid_slug
 from finerx_mcp.flags import competitor_prices_enabled
 from finerx_mcp.labels import labels_for, tr
@@ -75,6 +75,7 @@ from finerx_mcp.limits import LIMITER
 from finerx_mcp.widget import (
     APP_URI,
     APP_URI_V21,
+    APP_URI_V22,
     WIDGET_MIME_TYPE,
     WIDGET_URI,
     build_id,
@@ -98,9 +99,13 @@ INSTRUCTIONS = """FineRx shows what US pharmacy chains were seen charging with t
 
 Which tool:
 - "How much is X / near me / in 10001": compare_prices(drug, strength?, form?, quantity?, zip?). Pass zip only when the person named a ZIP or a place you can map to one; otherwise leave it out (the host's approximate location or a national answer is used). The card price is set per chain (Walmart: per state), so the choice is the chain, not the address.
-- Pharmacies near a ZIP: find_nearby_pharmacies. Strengths and pack sizes of a drug: get_drug. A name to a slug: search_drugs.
+- The person named an amount — a copay, what they pay now, or a price they want to be told about: pass it as compare_to on compare_prices; the answer counts the chains seen below it. A card price replaces insurance for that fill; it is not added to a copay. FineRx sends no alerts: to watch a price, re-run the same call later (on a schedule, if you can set one) and speak up only when a chain is below the amount.
+- Several medicines at once ("all my prescriptions", "which pharmacy for the whole list"): compare_basket(drugs, zip?) — one row per chain with the sum of its card prices, only where every medicine was seen with a price. A sum is an addition of observed prices, not a quote.
+- Pharmacies near a ZIP: find_nearby_pharmacies. Strengths and pack sizes of a drug: get_drug. A name to a slug: search_drugs — not needed before a price: the price tools take a name as typed, with its strength and pack size.
 - The person wants to look a medicine up themselves, or asks to open FineRx: open_price_finder(query?) — the search opens inside the card.
 - The card: get_savings_card. To email it, ask for the address and an explicit yes first, then call email_savings_card.
+- The prescription is already at one pharmacy and the card price is at another ("how do I switch", "my prescription is at CVS"): get_transfer_steps(chain?, drug?, zip?) — the steps, in the words to say, and the nearest stores of the chain they picked.
+- Several medicines from another country at once (a list brought from home): find_us_equivalents(brands, country?) — one row per medicine with its reviewed sentence.
 - A medicine from another country or in another script: find_us_equivalent FIRST; quote its guidance sentence as written; then compare_prices for usDrug.slug.
 - No prescription yet: get_prescription_options. Pages and the card exist in 12 languages (en, es, zh, vi, tl, ar, ko, ru, pt, ht, fr, tr): pass the person's language as locale.
 
@@ -113,6 +118,8 @@ The card is accepted at card.chainsCount pharmacy chains (say that number, not "
 For controlled or age-restricted medicines (stimulants such as Adderall, opioids, benzodiazepines and sleep medicines such as Xanax or Ambien, phentermine, testosterone, carisoprodol, pregabalin) give the card prices and the card only — no route to a prescription and no adjectives about savings.
 
 Hosts that render MCP Apps show prices, pharmacies and the card as an interactive card; still write the prices, dates and codes in your text for hosts and people that cannot see it. What the person picks inside the card (a medicine, dose, pack size, ZIP or city) reaches you as context from the card: build on that choice instead of asking again.
+
+Every result carries `next`: the calls that fit that answer, with the arguments already filled in from it (the slug, the package, the ZIP). Take a call from there instead of composing one from memory; where a step has `ask`, get that one thing from the person first. They are offers, not orders: skip a step the person did not ask for.
 
 Never give dosing or other medical advice. Attribute as "Prices via FineRx"."""
 
@@ -190,9 +197,15 @@ def _result(
     ui: bool = False,
     meta: dict[str, Any] | None = None,
     card: bool = True,
+    next: list[dict[str, Any]] | None = None,
 ) -> CallToolResult:
     """One CallToolResult: ``content`` for the model, ``structuredContent`` for
-    the widget (and ChatGPT's model), ``_meta`` for the widget only."""
+    the widget (and ChatGPT's model), ``_meta`` for the widget only. ``next``
+    (``next_steps``) goes into both: the same steps as data and as text, before
+    the card block."""
+    if next:
+        structured = {**structured, "next": next}
+        text = f"{text.rstrip()}\n\n{next_steps.text_block(next)}"
     out_meta: dict[str, Any] = {"finerx/build": build_id()}
     if ui:
         out_meta["finerx/labels"] = labels_for(locale)
@@ -433,6 +446,11 @@ _VIEW_OF = {
     "find_us_equivalent": "equivalent",
     "ui_equivalent": "equivalent",
     "get_prescription_options": "rx",
+    "compare_basket": "basket",
+    "ui_basket": "basket",
+    "get_drug": "packages",
+    "find_us_equivalents": "equivalents",
+    "get_transfer_steps": "transfer",
 }
 
 
@@ -485,6 +503,7 @@ async def _prices_answer(
     channel: str,
     legacy: dict | None = None,
     where: str | None = None,
+    compare_to: Any = None,
 ) -> CallToolResult:
     """The whole "how much is X near me" answer: one ``POST /prices/near``, the
     options for the chips, the card with the price that answer found.
@@ -529,7 +548,14 @@ async def _prices_answer(
         structured = views.envelope(
             "prices", locale=locale, direction=direction, card=card_view, data=None, error=error
         )
-        return _result(text, structured, locale=locale, channel=channel, ui=True)
+        return _result(
+            text,
+            structured,
+            locale=locale,
+            channel=channel,
+            ui=True,
+            next=next_steps.after_not_found(error.get("suggestions")),
+        )
 
     d = near.get("drug") or {}
     options = await _options(d.get("slug"), locale)
@@ -539,6 +565,9 @@ async def _prices_answer(
     )
     data, all_rows = views.prices_data(near, options)
     text = views.prices_text(near, restricted=restricted, locale=locale)
+    if against := views.compare_to(near, compare_to):
+        data["compareTo"] = against
+        text += "\n" + views.compare_to_text(against, locale)
     notice = None
     if zip_bad:
         # No place was sent, so the API answered nationally with needsZip.
@@ -563,6 +592,7 @@ async def _prices_answer(
         channel=channel,
         ui=True,
         meta={"finerx/allChains": all_rows},
+        next=next_steps.after_prices(data, restricted=restricted),
     )
 
 
@@ -632,6 +662,31 @@ _RX_META: dict[str, Any] = {
     "openai/toolInvocation/invoking": "Finding routes to a prescription…",
     "openai/toolInvocation/invoked": "Routes to a prescription",
 }
+# The 2.2 view (basket) under its own uri, for the same reason.
+_BASKET_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V22},
+    "openai/outputTemplate": APP_URI_V22,
+    "openai/toolInvocation/invoking": "Adding up card prices…",
+    "openai/toolInvocation/invoked": "Card prices for your medicines",
+}
+_TRANSFER_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V22},
+    "openai/outputTemplate": APP_URI_V22,
+    "openai/toolInvocation/invoking": "Getting the transfer steps…",
+    "openai/toolInvocation/invoked": "How to move a prescription",
+}
+_EQUIVALENTS_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V22},
+    "openai/outputTemplate": APP_URI_V22,
+    "openai/toolInvocation/invoking": "Looking up the US names…",
+    "openai/toolInvocation/invoked": "US names found",
+}
+_PACKAGES_META: dict[str, Any] = {
+    "ui": {"resourceUri": APP_URI_V22},
+    "openai/outputTemplate": APP_URI_V22,
+    "openai/toolInvocation/invoking": "Looking up strengths and pack sizes…",
+    "openai/toolInvocation/invoked": "Strengths and pack sizes",
+}
 # App-only: the widget calls these, the model never sees them, and they carry no
 # template (a template on every call would re-render the iframe each time).
 # ``openai/visibility: private`` is the Apps SDK's own key for the same (kept
@@ -664,6 +719,7 @@ async def compare_prices(
     ndc: str | None = None,
     locale: str | None = None,
     channel: str | None = None,
+    compare_to: float | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
     """Price of one medicine with the free FineRx card at US pharmacy chains, near a place.
@@ -675,6 +731,9 @@ async def compare_prices(
     5-digit US ZIP — pass it only when the person gave one; without it the host's
     approximate location is used when there is one, else the answer is national
     and asks for a ZIP. ``ndc`` (+ ``quantity``) is accepted for older callers.
+    ``compare_to`` is a dollar amount the person named for THIS package — their
+    insurance copay, what they pay now, or a price they want to hear about —
+    and the answer then says how many chains were seen below it.
 
     Returns the package, every chain's card price with its observation date
     (Walmart per state), the nearest store of each chain with a store nearby,
@@ -714,6 +773,7 @@ async def compare_prices(
         locale=loc,
         channel=chan,
         legacy=legacy,
+        compare_to=compare_to,
     )
 
 
@@ -731,6 +791,7 @@ async def ui_prices(
     zip: str | None = None,
     where: str | None = None,
     locale: str | None = None,
+    compare_to: float | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
     """Card prices for another dose, quantity or place — called by the FineRx card itself.
@@ -750,6 +811,7 @@ async def ui_prices(
         where=where,
         locale=loc,
         channel=hosts.default_channel(ctx),
+        compare_to=compare_to,
     )
 
 
@@ -895,7 +957,14 @@ async def _pharmacies_answer(
     structured = views.envelope(
         "pharmacies", locale=locale, direction=direction, card=card_view, data=data, notice=notice
     )
-    return _result(text, structured, locale=locale, channel=channel, ui=True)
+    return _result(
+        text,
+        structured,
+        locale=locale,
+        channel=channel,
+        ui=True,
+        next=next_steps.after_pharmacies(data, restricted=restricted),
+    )
 
 
 @mcp.tool(
@@ -981,6 +1050,291 @@ async def ui_nearby(
         channel=hosts.default_channel(ctx),
         where=where,
     )
+
+
+# --- moving a prescription (MCP 2.2) ------------------------------------------------
+#
+# A card price at another chain is worth nothing to a person whose prescription
+# sits where it was sent. The steps are the same at every US pharmacy and are
+# written here once (labels.TEXT, en/es/ru) so no model composes them. No store
+# phone numbers: we do not hold them.
+
+TRANSFER_STORES = 3
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="How to move a prescription to another pharmacy", **_READ_HINTS),
+    meta=_TRANSFER_META,
+    structured_output=False,
+)
+@_guarded("model")
+async def get_transfer_steps(
+    chain: str | None = None,
+    drug: str | None = None,
+    strength: str | None = None,
+    form: str | None = None,
+    quantity: int | None = None,
+    zip: str | None = None,
+    locale: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """How to move a prescription from the pharmacy that has it to the one the person wants to use.
+
+    Use when the person says their prescription is at another pharmacy, asks
+    how to switch pharmacies, or picked a chain from the card prices and their
+    prescription is elsewhere. ``chain`` is the chain they want to move TO, as
+    a code: walmart, cvs, walgreens, kroger, albertsons, costco, publix, heb,
+    hyvee, meijer, wegmans, shoprite, bigy, gianteagle, kinney. Optional
+    ``drug`` (+ strength, form, quantity) adds that chain's card price with its
+    date. ``zip`` is a 5-digit US ZIP — pass it only when the person gave one.
+
+    Returns the steps in order (what to say and what to have ready), three
+    notes (it is free; no refills left means a new prescription; some medicines
+    have stricter rules), the nearest stores of that chain when a place is
+    known, and the card. For controlled or age-restricted medicines it returns
+    only ``restricted: true``. Not medical advice.
+
+    Next: read the steps out as written; then the card sentence and codes.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = hosts.default_channel(ctx)
+    direction = hosts.text_dir(loc)
+    base = await _base_card(loc, chan)
+    fams = _families(chain)[:1]
+    family = fams[0] if fams and re.fullmatch(r"[a-z]{2,20}", fams[0]) else None
+    place, zip_bad, _ = _basket_place(ctx, zip, None)
+
+    if card_law.is_restricted(drug):
+        card_view = card_law.to_view(base, locale=loc, restricted=True)
+        note = tr(loc, "restrictedRx")
+        data = views.transfer_data(loc, restricted=True, note=note)
+        structured = views.envelope("transfer", locale=loc, direction=direction, card=card_view, data=data)
+        return _result(note, structured, locale=loc, channel=chan, ui=True)
+
+    near: dict | None = None
+    nearby: dict | None = None
+    try:
+        if drug:
+            name, strength, quantity = _split_drug_text(drug, strength, quantity)
+            near = await client().post(
+                "/prices/near",
+                {"drug": name, "form": form, "strength": strength, "quantity": quantity, "locale": loc, "channel": chan, **place},
+            )
+        elif family and place:
+            params: dict[str, Any] = {"limit": TRANSFER_STORES, "family": family}
+            if "zip" in place:
+                params["zip"] = place["zip"]
+            else:
+                params["lat"], params["lon"] = place["lat"], place["lon"]
+            nearby = await client().get("/pharmacies/nearby", params)
+    except FinerxApiError:
+        near = nearby = None  # the steps stand on their own
+
+    d = (near or {}).get("drug") or {}
+    restricted = card_law.is_restricted(d.get("slug"), d.get("name"))
+    if restricted:
+        card_view = card_law.to_view(base, locale=loc, restricted=True)
+        note = tr(loc, "restrictedRx")
+        data = views.transfer_data(loc, restricted=True, note=note)
+        structured = views.envelope("transfer", locale=loc, direction=direction, card=card_view, data=data)
+        return _result(note, structured, locale=loc, channel=chan, ui=True)
+    card = card_law.merge_api_card(near.get("card"), base) if near else base
+    card_view = card_law.to_view(card, locale=loc)
+    data = views.transfer_data(loc, family=family, near=near, nearby=nearby, precision="zip" if "zip" in place else "approx")
+    notice = _zip_notice(loc) if zip_bad else None
+    text = views.transfer_text(data, loc)
+    if notice:
+        text = f"{notice['message']}\n{text}"
+    structured = views.envelope("transfer", locale=loc, direction=direction, card=card_view, data=data, notice=notice)
+    return _result(
+        text, structured, locale=loc, channel=chan, ui=True, next=next_steps.after_transfer(data)
+    )
+
+
+# --- the basket (MCP 2.2): several medicines, one place ---------------------------
+#
+# The saving a person can act on is the choice of chain (the card price is set
+# per chain), and with several prescriptions the question is which ONE chain.
+# One ``POST /prices/near`` per medicine for the same place; the table is built
+# in ``views.basket_data`` from those answers and nothing else.
+
+BASKET_MAX = 6
+
+
+def _basket_place(ctx: Any, zip: str | None, where: str | None) -> tuple[dict[str, Any], bool, bool]:
+    """(the place fields of a ``/prices/near`` body, the ZIP given was malformed,
+    a typed place was sent as ``address``) — the same order as ``_prices_answer``."""
+    place: dict[str, Any] = {}
+    typed = None if _clean_zip(zip) else _clean_where(where)
+    zip_bad = not typed and _zip_given(zip) and _clean_zip(zip) is None
+    if z := _clean_zip(zip):
+        place["zip"] = z
+    elif typed and (tz := _clean_zip(typed)):
+        place["zip"] = tz
+    elif typed:
+        place["address"] = typed
+    elif not zip_bad and (here := hosts.user_location(ctx)) is not None:
+        place["lat"], place["lon"] = here.lat, here.lon
+    return place, zip_bad, "address" in place
+
+
+async def _basket_answer(
+    ctx: Any,
+    *,
+    entries: list[dict[str, Any]],
+    zip: str | None,
+    locale: str,
+    channel: str,
+    where: str | None = None,
+    trimmed: bool = False,
+) -> CallToolResult:
+    direction = hosts.text_dir(locale)
+    base = await _base_card(locale, channel)
+    place, zip_bad, typed_address = _basket_place(ctx, zip, where)
+
+    async def one(entry: dict[str, Any]) -> dict | FinerxApiError:
+        body = {
+            "drug": entry["drug"],
+            "form": entry.get("form"),
+            "strength": entry.get("strength"),
+            "quantity": entry.get("quantity"),
+            "locale": locale,
+            "channel": channel,
+            **place,
+        }
+        try:
+            return await client().post("/prices/near", body)
+        except FinerxApiError as exc:
+            return exc
+
+    answers = await asyncio.gather(*(one(e) for e in entries))
+    nears = [a for a in answers if isinstance(a, dict)]
+    failed = [a for a in answers if isinstance(a, FinerxApiError)]
+    unmatched = sum(1 for a in failed if a.status_code == 404)
+    typed_names = [e["drug"] for e in entries]
+    if not nears:
+        restricted = card_law.is_restricted(*typed_names)
+        card_view = card_law.to_view(base, locale=locale, restricted=restricted)
+        if failed and unmatched == len(failed):
+            text, error = tr(locale, "basketNoneMatched"), {"code": "drug_not_found", "suggestions": []}
+        else:
+            text, error = _api_error_text(failed[0], locale), {"code": "api_unavailable"}
+        structured = views.envelope(
+            "basket", locale=locale, direction=direction, card=card_view, data=None, error=error
+        )
+        return _result(text, structured, locale=locale, channel=channel, ui=True)
+
+    names: list[Any] = list(typed_names)
+    for near in nears:
+        d = near.get("drug") or {}
+        names += [d.get("slug"), d.get("name")]
+    restricted = card_law.is_restricted(*names)
+    card_view = card_law.to_view(base, locale=locale, restricted=restricted)
+    data = views.basket_data(nears, unmatched=len(failed))
+    text = views.basket_text(data, restricted=restricted, locale=locale)
+    notice = None
+    if zip_bad:
+        data["needsZip"] = True
+        notice = _zip_notice(locale)
+    elif typed_address and _unplaced(data.get("origin")):
+        data["needsZip"] = True
+        notice = _where_notice(locale)
+    elif trimmed:
+        notice = {"code": "basket_trimmed", "message": tr(locale, "basketTrimmed", n=BASKET_MAX)}
+    if notice:
+        text = f"{notice['message']}\n{text}"
+    structured = views.envelope(
+        "basket", locale=locale, direction=direction, card=card_view, data=data, notice=notice
+    )
+    return _result(
+        text, structured, locale=locale, channel=channel, ui=True, next=next_steps.after_basket(data)
+    )
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Card prices for several medicines at one pharmacy chain", **_READ_HINTS),
+    meta=_BASKET_META,
+    structured_output=False,
+)
+@_guarded("model")
+async def compare_basket(
+    drugs: list[str],
+    zip: str | None = None,
+    locale: str | None = None,
+    channel: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """Card prices for several medicines at once: which pharmacy chain was seen pricing the whole list, and the sum there.
+
+    Use when the person names two or more medicines and asks what they cost
+    together, or which one pharmacy to use for all of them. ``drugs`` is two to
+    six names as typed or slugs; a dose and a pack size may ride in each name
+    ("atorvastatin 40 mg 90"). ``zip`` is a 5-digit US ZIP — pass it only when
+    the person gave one; without it the host's approximate location is used
+    when there is one, else the chains are listed nationally.
+
+    Returns the package used for each medicine, then one row per chain: its
+    card price for each medicine with the observation date, and — only when
+    every medicine was seen with a price there — their sum with the dates the
+    prices were observed. When taking each medicine at a different chain comes
+    to less than every one-chain sum, that is given too. Names that matched no
+    medicine are counted and left out. A sum is an addition of observed card
+    prices, never a quote: the pharmacy sets the final price.
+
+    Next: read out the chains with a sum and its dates; then the card sentence
+    and codes. One medicine only: use compare_prices.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = _channel(channel, ctx)
+    raw = [d for d in (drugs if isinstance(drugs, list) else [drugs]) if isinstance(d, str) and d.strip()]
+    if not raw:
+        return await _view_failure("basket", tr(loc, "drugRequired"), "drug_required", loc, chan)
+    entries = []
+    for text_ in raw[:BASKET_MAX]:
+        name, strength, quantity = _split_drug_text(text_, None, None)
+        entries.append({"drug": name, "strength": strength, "quantity": quantity})
+    return await _basket_answer(
+        ctx, entries=entries, zip=zip, locale=loc, channel=chan, trimmed=len(raw) > BASKET_MAX
+    )
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="Refresh the medicines list card", **_READ_HINTS),
+    meta=_APP_ONLY_META,
+    structured_output=False,
+)
+@_guarded("ui")
+async def ui_basket(
+    slugs: list[str],
+    strengths: list[str] | None = None,
+    forms: list[str] | None = None,
+    quantities: list[int] | None = None,
+    zip: str | None = None,
+    where: str | None = None,
+    locale: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """The same list of medicines for another place — called by the FineRx card itself.
+
+    ``slugs`` with their packages in parallel lists (an empty string or 0 = not
+    set). ``where`` is the place as typed in the card: used for this one
+    request, never stored. Not for the model.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = hosts.default_channel(ctx)
+
+    def at(values: list | None, i: int) -> Any:
+        v = values[i] if isinstance(values, list) and i < len(values) else None
+        return v or None
+
+    entries = [
+        {"drug": slug, "strength": at(strengths, i), "form": at(forms, i), "quantity": at(quantities, i)}
+        for i, slug in enumerate((slugs or [])[:BASKET_MAX])
+        if valid_slug(slug)
+    ]
+    if not entries:
+        return await _view_failure("basket", tr(loc, "drugRequired"), "drug_required", loc, chan)
+    return await _basket_answer(ctx, entries=entries, zip=zip, locale=loc, channel=chan, where=where)
 
 
 # --- the search (MCP 2.1): a card where the person types the medicine -------------
@@ -1073,7 +1427,9 @@ async def open_price_finder(
     data = {"query": q, "suggestions": results, "foreignBrands": foreign, "popular": popular, "origin": None}
     structured = views.envelope("search", locale=loc, direction=hosts.text_dir(loc), card=card_view, data=data)
     text = views.search_text(q, results, foreign, popular, loc)
-    return _result(text, structured, locale=loc, channel=chan, ui=True)
+    return _result(
+        text, structured, locale=loc, channel=chan, ui=True, next=next_steps.after_matches(results, foreign)
+    )
 
 
 @mcp.tool(
@@ -1233,10 +1589,21 @@ async def get_savings_card(
         locale=loc,
         direction=hosts.text_dir(loc),
         card=card_view,
-        data={"drug": drug_ref, "priceWithCard": card_view.get("priceWithCard")},
+        data={
+            "drug": drug_ref,
+            "priceWithCard": card_view.get("priceWithCard"),
+            # MCP 2.2: the card page as a QR, for a person at a computer — the
+            # card page itself, never the drug's page (no medicine in the link).
+            "qr": views.card_qr(card_law.to_view(base, locale=loc).get("siteUrl"), chan),
+        },
     )
     result = _result(
-        "\n".join(lines), structured, locale=loc, channel=chan, ui=True
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        ui=True,
+        next=next_steps.after_card(structured["data"]),
     )
     # A picture of the card only for hosts that draw no UI. Never to ChatGPT: an
     # image block counts against the Free plan's image quota (it paused a live
@@ -1318,11 +1685,11 @@ async def email_savings_card(
         if exc.status_code == 429 and exc.retry_after:
             structured["retryAfter"] = exc.retry_after
         text = f"Not sent — {structured['error']}."
-        return _result(text, structured, locale=loc, channel=chan)
+        return _result(text, structured, locale=loc, channel=chan, next=next_steps.after_email(False))
     masked = _mask_email(email)
     structured = {"sent": True, "to": masked, "card": card_view}
     return _result(
-        tr(loc, "emailSent", to=masked), structured, locale=loc, channel=chan
+        tr(loc, "emailSent", to=masked), structured, locale=loc, channel=chan, next=next_steps.after_email(True)
     )
 
 
@@ -1358,6 +1725,10 @@ async def search_drugs(
     ctx: Context | None = None,
 ) -> CallToolResult:
     """Find a medicine by name (brand, generic, misspelled or in another script) and get its slug.
+
+    Not needed before compare_prices, compare_basket or get_transfer_steps:
+    they take a name as typed. Use it when the person asks what FineRx has, or
+    a name is ambiguous.
 
     Returns candidates with ``slug`` (for get_drug and compare_prices), ``kind``
     (generic/brand) and ``fromCardPrice`` — where its card prices start: the
@@ -1421,10 +1792,20 @@ async def search_drugs(
         "foreignBrands": brands,
         "card": card_view,
     }
-    return _result("\n".join(lines), structured, locale=loc, channel=chan)
+    return _result(
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        next=next_steps.after_matches(results, brands, detail=True),
+    )
 
 
-@mcp.tool(annotations=ToolAnnotations(title="Get drug details", **_READ_HINTS), structured_output=False)
+@mcp.tool(
+    annotations=ToolAnnotations(title="Get drug details", **_READ_HINTS),
+    meta=_PACKAGES_META,
+    structured_output=False,
+)
 @_guarded("model")
 async def get_drug(
     slug: str,
@@ -1516,7 +1897,24 @@ async def get_drug(
         "defaultPackage": {"package": package, "coverage": cp.get("coverage"), "chains": chains},
         "card": card_view,
     }
-    return _result("\n".join(lines), structured, locale=loc, channel=chan)
+    # MCP 2.2: the same answer as a view (every 2.0 key stays beside the envelope).
+    structured.update(
+        views.envelope(
+            "packages",
+            locale=loc,
+            direction=hosts.text_dir(loc),
+            card=card_view,
+            data=views.packages_data(structured, package, options),
+        )
+    )
+    return _result(
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        ui=True,
+        next=next_steps.after_drug(structured, restricted=restricted),
+    )
 
 
 @mcp.tool(annotations=ToolAnnotations(title="FineRx dataset info", **_READ_HINTS), structured_output=False)
@@ -1631,7 +2029,7 @@ async def get_prescription_options(
             **legacy,
             **views.envelope("rx", locale=loc, direction=direction, card=card_view, data=data),
         }
-        return _result(note, structured, locale=loc, channel=chan, ui=True)
+        return _result(note, structured, locale=loc, channel=chan, ui=True, next=next_steps.after_rx(data))
     try:
         api = await client().get("/prescription-options", {"locale": loc, "drug": drug})
     except FinerxApiError as exc:
@@ -1690,7 +2088,14 @@ async def get_prescription_options(
         "readerLocale": loc,
     }
     structured = {**views.envelope("rx", locale=loc, direction=direction, card=card_view, data=data), **legacy}
-    return _result("\n".join(lines) or tr(loc, "noOptions"), structured, locale=loc, channel=chan, ui=True)
+    return _result(
+        "\n".join(lines) or tr(loc, "noOptions"),
+        structured,
+        locale=loc,
+        channel=chan,
+        ui=True,
+        next=next_steps.after_rx(data),
+    )
 
 
 # --- foreign brands: what my medicine is called in the US --------------------
@@ -1815,7 +2220,14 @@ async def _equivalent_answer(
     if structured["otherMatches"]:
         others = "; ".join(f"{m['brand']} ({', '.join(m.get('countries') or [])})" for m in structured["otherMatches"])
         lines.append(tr(loc, "sameBrandElsewhere", list=others))
-    return _result("\n".join(lines), structured, locale=loc, channel=chan, ui=True)
+    return _result(
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        ui=True,
+        next=next_steps.after_equivalent(structured["data"], restricted=restricted),
+    )
 
 
 @mcp.tool(
@@ -1889,6 +2301,121 @@ async def find_us_equivalent(
         return _result(tr(loc, "noForeignMatch", brand=brand), structured, locale=loc, channel=chan, ui=True)
     return await _equivalent_answer(
         data, [r for r in results if r.get("brandSlug") != match.get("brandSlug")], loc=loc, chan=chan, base=base
+    )
+
+
+EQUIVALENTS_MAX = 6
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(title="US names for several medicines from another country", **_READ_HINTS),
+    meta=_EQUIVALENTS_META,
+    structured_output=False,
+)
+@_guarded("model")
+async def find_us_equivalents(
+    brands: list[str],
+    country: str | None = None,
+    locale: str | None = None,
+    channel: str | None = None,
+    ctx: Context | None = None,
+) -> CallToolResult:
+    """What several medicines from another country are in the US — the list a person brought from home.
+
+    Use when the person names two or more medicines that are not US products
+    (brands from home, names in another script) and asks what they are here.
+    ``brands`` is two to six names as typed; optional ``country`` picks between
+    brands of the same name sold in different places. One medicine: use
+    find_us_equivalent.
+
+    Returns one entry per medicine found, each exactly as find_us_equivalent
+    gives it: ``usClass``, the reviewed ``guidance`` sentence (quote it word for
+    word), the US product and where its card prices start ONLY when it has the
+    same active ingredient, and the card. Names that matched nothing are
+    counted and left out — never guess what they are.
+
+    Next: for each entry quote ``guidance``; name no substitute for
+    ``rx_alternative`` and ``no_equivalent``; then offer compare_basket for the
+    US products that have the same active ingredient.
+    """
+    loc = hosts.resolve_locale(locale, ctx)
+    chan = _channel(channel, ctx)
+    direction = hosts.text_dir(loc)
+    base = await _base_card(loc, chan)
+    raw = [b for b in (brands if isinstance(brands, list) else [brands]) if isinstance(b, str) and b.strip()]
+    if not raw:
+        return await _view_failure("equivalents", tr(loc, "drugRequired"), "drug_required", loc, chan)
+
+    async def one(brand: str) -> dict | None | FinerxApiError:
+        try:
+            found = await client().get("/analogs/search", {"q": brand, "limit": _BRAND_SEARCH_LIMIT, "locale": loc})
+            results = [r for r in found.get("results") or [] if valid_slug(r.get("brandSlug"))]
+            if not results:
+                return None
+            match = _pick_match(results, country)
+            entry = await client().get(slug_path("/analogs/{}", match["brandSlug"]), {"locale": loc, "channel": chan})
+            entry["brandSlug"] = match["brandSlug"]
+            return entry
+        except FinerxApiError as exc:
+            return None if exc.status_code == 404 else exc
+
+    answers = await asyncio.gather(*(one(b) for b in raw[:EQUIVALENTS_MAX]))
+    entries = [a for a in answers if isinstance(a, dict)]
+    errors = [a for a in answers if isinstance(a, FinerxApiError)]
+    if not entries:
+        card_view = card_law.to_view(base, locale=loc)
+        if errors:
+            text, error = _api_error_text(errors[0], loc), {"code": "api_unavailable"}
+        else:
+            text, error = tr(loc, "equivalentsNone"), {"code": "not_found"}
+        structured = views.envelope("equivalents", locale=loc, direction=direction, card=card_view, data=None, error=error)
+        return _result(text, structured, locale=loc, channel=chan, ui=True)
+
+    items: list[dict] = []
+    lines = [f"**{tr(loc, 'equivalentsHead', n=len(entries))}**"]
+    names: list[Any] = []
+    for i, entry in enumerate(entries, 1):
+        us_drug = entry.get("usDrug") or None
+        us_view = None
+        if us_drug and valid_slug(us_drug.get("slug")) and entry.get("usClass") == "same_inn":
+            opts = await _options(us_drug.get("slug"), loc)
+            od = (opts or {}).get("drug") or {}
+            us_view = {
+                "slug": us_drug["slug"],
+                "name": od.get("name") or us_drug.get("name") or us_drug["slug"],
+                "kind": od.get("kind"),
+                "cardFrom": views.dated_price(views.from_card_price(opts)),
+            }
+        item = {**views.equivalent_data(entry, us_view), "brandSlug": entry.get("brandSlug")}
+        items.append(item)
+        names += [(us_drug or {}).get("slug"), entry.get("usGeneric"), entry.get("inn"), entry.get("brand")]
+        lines.append(f"{i}. **{entry.get('brand')}** ({', '.join(entry.get('countries') or [])})")
+        if g := entry.get("guidance"):
+            lines.append(f"   {g}")
+        if us_view:
+            cf = us_view["cardFrom"]
+            price = (
+                tr(loc, "suggestFrom", price=views.money(cf["amount"]), date=cf["observedAt"])
+                if cf
+                else tr(loc, "noCardPriceYet")
+            )
+            lines.append(f"   {us_view['name']} — slug {us_view['slug']} — {price}")
+    if dis := next((e.get("disclaimer") for e in entries if e.get("disclaimer")), None):
+        lines.append(dis)
+    unmatched = len(raw[:EQUIVALENTS_MAX]) - len(entries)
+    if unmatched:
+        lines.append(tr(loc, "equivalentsUnmatched", n=unmatched))
+    restricted = card_law.is_restricted(*names)
+    card_view = card_law.to_view(base, locale=loc, restricted=restricted)
+    data = {"items": items, "unmatched": unmatched}
+    structured = views.envelope("equivalents", locale=loc, direction=direction, card=card_view, data=data)
+    return _result(
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        ui=True,
+        next=next_steps.after_equivalents(items),
     )
 
 
@@ -1972,7 +2499,13 @@ async def foreign_brands_for_drug(slug: str, ctx: Context | None = None) -> Call
         script = f" ({b['brandScript']})" if b.get("brandScript") else ""
         lines.append(f"- {b['brand']}{script} — {', '.join(b.get('countries') or [])} — {b.get('usClass')}")
     structured = {"drugSlug": data.get("drugSlug", slug), "count": len(brands), "brands": brands, "card": card_view}
-    return _result("\n".join(lines), structured, locale=loc, channel=chan)
+    return _result(
+        "\n".join(lines),
+        structured,
+        locale=loc,
+        channel=chan,
+        next=next_steps.after_foreign_brands(structured["drugSlug"]),
+    )
 
 
 # --- the UI bundle ---------------------------------------------------------------
@@ -2029,6 +2562,22 @@ def app_widget() -> str:
 )
 def app_widget_v21() -> str:
     """The same bundle under the 2.1 uri, so no host shows a cached 2.0 copy for a 2.1 view."""
+    return load_app_html()
+
+
+@mcp.resource(
+    APP_URI_V22,
+    name="FineRx card prices app (2.2 views)",
+    title="FineRx",
+    description=(
+        "The interactive FineRx card with the 2.2 view: several medicines at once, one row per "
+        "pharmacy chain — plus search, prices, nearby pharmacies and the free card."
+    ),
+    mime_type=WIDGET_MIME_TYPE,
+    meta=_APP_META,
+)
+def app_widget_v22() -> str:
+    """The same bundle under the 2.2 uri, so no host shows a cached copy that lacks the basket."""
     return load_app_html()
 
 

@@ -96,6 +96,8 @@ export interface PricesData {
   moreCount?: number;
   needsZip?: boolean;
   coverage?: Coverage;
+  /** An amount the person named and how many chains were seen below it. */
+  compareTo?: { amount: number; below: number; of: number; observedFrom?: string; observedTo?: string } | null;
 }
 
 export interface Store {
@@ -122,6 +124,8 @@ export interface PharmaciesData {
 export interface CardData {
   drug?: Drug | null;
   priceWithCard?: PriceWithCard | null;
+  /** The card page as a QR: square rows of "0"/"1" (MCP 2.2). */
+  qr?: { url?: string; rows?: string[] } | null;
 }
 
 /** One suggestion of `ui_suggest` / `open_price_finder` (contract C1'.1). */
@@ -191,7 +195,80 @@ export interface RxData {
   readerLocale?: string | null;
 }
 
-export type ViewName = "prices" | "pharmacies" | "card" | "search" | "equivalent" | "rx";
+/** MCP 2.2: one medicine of the list, with the package the prices are for. */
+export interface BasketItem {
+  drug: Drug;
+  package?: Package;
+  coverage?: Coverage;
+  /** false = no listed chain was seen pricing it; it is left out of every sum. */
+  priced?: boolean;
+}
+
+/** A sum of observed card prices with the span of their observation dates. */
+export interface BasketTotal {
+  amount: number;
+  /** How many of the items the sum adds. */
+  count?: number;
+  observedFrom: string;
+  observedTo: string;
+}
+
+export interface BasketRow {
+  family: string;
+  name: string;
+  zone?: string | null;
+  nearestMiles?: number | null;
+  storeCount?: number;
+  /** One per item, in the items' order; null = no card price seen there. */
+  prices?: (Price | null)[];
+  /** Only when every item has a price at this chain. */
+  total?: BasketTotal | null;
+  /** 1-based numbers of the items without a price here. */
+  missing?: number[];
+}
+
+export interface BasketData {
+  items?: BasketItem[];
+  origin?: Origin;
+  rows?: BasketRow[];
+  moreCount?: number;
+  split?: (BasketTotal & { chains?: number; picks?: { item?: number; family: string; name: string }[] }) | null;
+  needsZip?: boolean;
+  unmatched?: number;
+}
+
+/** MCP 2.2: moving a prescription to the chain the person picked. */
+export interface TransferData {
+  chain?: { family: string; name: string } | null;
+  drug?: Drug | null;
+  package?: Package | null;
+  price?: Price | null;
+  /** The server's own fixed sentences. Shown VERBATIM. */
+  steps?: string[];
+  notes?: string[];
+  stores?: Store[];
+  origin?: Origin;
+  restricted?: boolean;
+  note?: string | null;
+}
+
+/** MCP 2.2: several medicines from another country, each as `equivalent` gives it. */
+export interface EquivalentsData {
+  items?: (EquivalentData & { brandSlug?: string | null })[];
+  unmatched?: number;
+}
+
+/** MCP 2.2: every strength × form of one medicine, each pack size with where
+ * its card prices start. */
+export interface PackagesData {
+  drug: Drug;
+  configs?: ConfigOption[];
+  /** Strengths with a card price that are not in `configs`. */
+  moreCount?: number;
+  default?: Package | null;
+}
+
+export type ViewName = "prices" | "pharmacies" | "card" | "search" | "equivalent" | "rx" | "basket" | "packages" | "equivalents" | "transfer";
 
 export interface Envelope {
   schema: string;

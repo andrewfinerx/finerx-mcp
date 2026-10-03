@@ -20,6 +20,14 @@ export const FIXTURE_NAMES = [
   "equivalent-no-equivalent",
   "rx",
   "rx-restricted",
+  // MCP 2.2
+  "basket",
+  "basket-national",
+  "packages",
+  "equivalents",
+  "transfer",
+  "transfer-restricted",
+  "card-qr",
 ] as const;
 
 const files = import.meta.glob("../fixtures/*.json", { eager: true, import: "default" }) as Record<string, ToolResultLike>;

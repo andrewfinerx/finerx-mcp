@@ -35,6 +35,29 @@ API's authentication and rate limits, so it adds zero extra attack surface.
   user id), so the API caps card emails per person instead of per server.
 - UI strings for the new views in all 12 languages.
 
+## What changed in 2.2
+
+- **`next` in every answer** — up to three calls that fit after it, with the
+  arguments already filled in from the answer (the resolved slug, the priced
+  package, a ZIP the person gave); `ask` names the one thing to get from the
+  person first. An assistant takes the next call from there instead of
+  composing it.
+- **`compare_basket(drugs, zip?)`** — several medicines at once: one row per
+  pharmacy chain with the sum of its card prices, only where every priced
+  medicine was seen there. A sum adds observed prices; it is not a quote.
+- **`compare_to` on `compare_prices`** — an amount the person named (a copay,
+  what they pay now, a price they want to hear about): the answer counts the
+  chains seen below it. A card price replaces insurance for that fill.
+- **`get_transfer_steps(chain?, drug?, zip?)`** — how to move a prescription to
+  the chain the person picked: fixed steps, the chain's dated card price, its
+  nearest stores.
+- **`find_us_equivalents(brands, country?)`** — the list a person brought from
+  another country, one reviewed entry per medicine.
+- **`get_drug` draws a card** (strengths × pack sizes with dated "from"
+  prices), and the card view carries a **QR** of the card page for a person at
+  a computer.
+- New views use the template `ui://finerx/v2.2/app.html`.
+
 ## What changed in 2.0
 
 - Prices are **card prices by pharmacy chain** with their observation date
@@ -54,7 +77,7 @@ API's authentication and rate limits, so it adds zero extra attack surface.
 
 | Tool | What it does |
 |------|--------------|
-| `compare_prices(drug, strength?, form?, quantity?, zip?, ndc?, locale?)` | Card price of one package at each pharmacy chain, with dates; nearest store of each chain; chains priced but without a store nearby; the card. Place: `zip`, else the host's approximate location (ChatGPT), else national |
+| `compare_prices(drug, strength?, form?, quantity?, zip?, ndc?, locale?, compare_to?)` | Card price of one package at each pharmacy chain, with dates; nearest store of each chain; chains priced but without a store nearby; the card. Place: `zip`, else the host's approximate location (ChatGPT), else national |
 | `find_nearby_pharmacies(zip?, family?, drug?, strength?, form?, quantity?)` | Stores within 30 miles per chain family; with `drug`, each with its chain's dated card price |
 | `get_savings_card(locale?, channel?, drug?)` | The free card: codes, how to use it, what to say at the counter, links — plus a PNG for hosts that draw no UI |
 | `email_savings_card(email, consent, locale?)` | Email the card to an address the person gave, after they said yes |
@@ -64,8 +87,11 @@ API's authentication and rate limits, so it adds zero extra attack surface.
 | `foreign_brands_for_drug(slug)` | What a US drug is called abroad (the reverse lookup) |
 | `get_prescription_options(locale?, drug?)` | What to do with no prescription yet, and where the drug's card prices start (for controlled / age-restricted medicines: card prices and the card only) |
 | `open_price_finder(query?, locale?)` | Opens the search inside the card: matches for `query` with dated "from" card prices, foreign brands, often-searched medicines |
+| `compare_basket(drugs, zip?, locale?)` | Two to six medicines at once: one row per chain with each card price and — only where every priced medicine was seen there — their sum with the dates |
+| `get_transfer_steps(chain?, drug?, strength?, form?, quantity?, zip?)` | How to move a prescription to the chain the person picked: fixed steps, that chain's dated card price, its nearest stores (controlled medicines: the card only) |
+| `find_us_equivalents(brands, country?, locale?)` | Two to six medicines from another country → one reviewed entry each; a US product only for the same active ingredient |
 | `get_dataset_info()` | Card-price coverage: chain families, banners, newest observation, stores on the map |
-| `ui_prices`, `ui_nearby`, `ui_suggest`, `ui_equivalent` | App-only (`_meta.ui.visibility: ["app"]`): called by the UI, hidden from the model. Only these take a place as text (`where`) |
+| `ui_prices`, `ui_nearby`, `ui_suggest`, `ui_equivalent`, `ui_basket` | App-only (`_meta.ui.visibility: ["app"]`): called by the UI, hidden from the model. Only these take a place as text (`where`) |
 
 Every price carries its `observedAt` date and is never scaled to another pack
 size. The server also ships **`instructions`** (the card rule: answer with each

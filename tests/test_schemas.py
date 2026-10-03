@@ -27,6 +27,16 @@ CASES = [
     ("ui_prices", {"slug": "atorvastatin-calcium", "where": "233 S Wacker Dr, Chicago"}, "prices"),
     ("ui_nearby", {"where": "233 S Wacker Dr, Chicago"}, "pharmacies"),
     ("ui_nearby", {"where": "Chicago, IL", "slug": "atorvastatin-calcium"}, "pharmacies"),
+    # MCP 2.2
+    ("get_drug", {"slug": "atorvastatin-calcium"}, "packages"),
+    ("find_us_equivalents", {"brands": ["Нурофен", "No-Spa"]}, "equivalents"),
+    ("get_transfer_steps", {"chain": "publix", "drug": "atorvastatin", "zip": "33101"}, "transfer"),
+    ("get_transfer_steps", {"chain": "publix", "zip": "33101"}, "transfer"),
+    ("get_transfer_steps", {}, "transfer"),
+    ("get_transfer_steps", {"drug": "oxycodone"}, "transfer"),
+    ("compare_basket", {"drugs": ["atorvastatin", "lisinopril"], "zip": "33101"}, "basket"),
+    ("compare_basket", {"drugs": ["atorvastatin"]}, "basket"),
+    ("ui_basket", {"slugs": ["atorvastatin-calcium", "lisinopril"], "where": "Chicago, IL"}, "basket"),
 ]
 
 
@@ -70,5 +80,5 @@ async def test_error_envelope_validates(api) -> None:
 
 def test_json_schema_exports() -> None:
     out = schemas.envelope_json_schema()
-    assert set(out) == {"prices", "pharmacies", "card", "search", "equivalent", "rx"}
+    assert set(out) == {"prices", "pharmacies", "card", "search", "equivalent", "rx", "basket", "packages", "equivalents", "transfer"}
     assert "schema" in out["prices"]["properties"]

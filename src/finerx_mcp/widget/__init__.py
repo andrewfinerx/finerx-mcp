@@ -35,6 +35,8 @@ APP_FILE = "app.v2.html"
 # otherwise draw them as its text fallback. The 2.0 tools keep APP_URI (their
 # metadata is unchanged); both uris serve the same, current bundle.
 APP_URI_V21 = "ui://finerx/v2.1/app.html"
+# MCP 2.2: the basket view, under its own uri for the same reason.
+APP_URI_V22 = "ui://finerx/v2.2/app.html"
 
 # 1.x uri, kept resolvable: a host holding a stale tools/list still finds a
 # component there (the v2 bundle, which draws view=card).
@@ -72,6 +74,7 @@ __all__ = [
     "APP_FILE",
     "APP_URI",
     "APP_URI_V21",
+    "APP_URI_V22",
     "WIDGET_FILE",
     "WIDGET_MIME_TYPE",
     "WIDGET_URI",

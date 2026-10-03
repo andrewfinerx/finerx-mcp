@@ -20,7 +20,7 @@ from finerx_mcp import __version__, server
 from finerx_mcp.client import FinerxClient
 from finerx_mcp.labels import LOCALES, labels_for
 from finerx_mcp.limits import Limiter
-from finerx_mcp.widget import APP_URI, APP_URI_V21, WIDGET_URI
+from finerx_mcp.widget import APP_URI, APP_URI_V21, APP_URI_V22, WIDGET_URI
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PNG = b"\x89PNG\r\n\x1a\nfake"
@@ -33,7 +33,7 @@ async def test_lists_the_phase_one_and_two_tools() -> None:
     """Every 2.0 tool is still listed (2.1 only adds) + the two phase-2 tools."""
     async with create_connected_server_and_client_session(server.mcp._mcp_server) as session:
         names = {t.name for t in (await session.list_tools()).tools}
-    assert names - {"open_price_finder", "ui_suggest", "ui_equivalent"} == {
+    assert names - {"open_price_finder", "ui_suggest", "ui_equivalent", "compare_basket", "ui_basket", "find_us_equivalents", "get_transfer_steps"} == {
         "search_drugs",
         "get_drug",
         "compare_prices",
@@ -48,13 +48,14 @@ async def test_lists_the_phase_one_and_two_tools() -> None:
         "ui_nearby",
     }
     assert {"open_price_finder", "ui_suggest"} <= names
+    assert {"compare_basket", "ui_basket"} <= names  # MCP 2.2
 
 
 async def test_version_is_the_release_candidate() -> None:
-    assert __version__ == "2.1.0"
+    assert __version__ == "2.2.0"
     async with create_connected_server_and_client_session(server.mcp._mcp_server) as session:
         init = await session.initialize()
-    assert init.serverInfo.version == "2.1.0"
+    assert init.serverInfo.version == "2.2.0"
 
 
 def test_instructions_carry_the_card_rule() -> None:
@@ -86,6 +87,7 @@ async def test_lists_resources_and_prompts() -> None:
     assert {str(r.uri) for r in resources.resources} == {
         APP_URI,
         APP_URI_V21,
+        APP_URI_V22,
         WIDGET_URI,
         "finerx://card",
         "finerx://how-it-works",
@@ -478,7 +480,7 @@ def test_wheel_ships_both_bundles(tmp_path: Path) -> None:
     built = subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], cwd=PACKAGE_ROOT, capture_output=True, text=True)
     assert built.returncode == 0, built.stderr
     wheels = list(tmp_path.glob("*.whl"))
-    assert wheels and "2.1.0" in wheels[0].name
+    assert wheels and "2.2.0" in wheels[0].name
     with zipfile.ZipFile(wheels[0]) as archive:
         names = archive.namelist()
     assert "finerx_mcp/widget/app.v2.html" in names

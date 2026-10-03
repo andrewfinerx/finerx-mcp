@@ -41,6 +41,11 @@ TOOL_ARGS: dict[str, dict] = {
     "open_price_finder": {"query": "atorva"},
     "ui_suggest": {"q": "atorva"},
     "ui_equivalent": {"brand_slug": "nurofen"},
+    # MCP 2.2: several medicines at once
+    "compare_basket": {"drugs": ["atorvastatin 20 mg", "lisinopril"], "zip": "33101"},
+    "ui_basket": {"slugs": ["atorvastatin-calcium", "lisinopril"], "quantities": [30, 0]},
+    "find_us_equivalents": {"brands": ["Нурофен", "No-Spa"]},
+    "get_transfer_steps": {"chain": "publix", "drug": "atorvastatin", "zip": "33101"},
 }
 # The same law with the phase-2 inputs that reach new code paths: a typed place
 # (app-only ``where``) on both refresh tools, and the search with no query.
@@ -51,6 +56,8 @@ EXTRA_CASES: list[tuple[str, dict]] = [
     ("open_price_finder", {}),
     ("get_prescription_options", {"drug": "oxycodone"}),
     ("find_us_equivalent", {"brand": "No-Spa"}),
+    ("compare_basket", {"drugs": ["atorvastatin", "oxycodone"]}),
+    ("ui_basket", {"slugs": ["atorvastatin-calcium"], "where": "233 S Wacker Dr, Chicago"}),
 ]
 META_ONLY = {"get_dataset_info"}  # the dataset, not a medicine: no card (contract)
 CARD_TOOLS = sorted(set(TOOL_ARGS) - META_ONLY)

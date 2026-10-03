@@ -1,0 +1,341 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "**3 medicines — card prices near Houston, TX (ZIP 77002)**\n1. Atorvastatin Calcium — 30 × 10mg Tablet\n2. Lisinopril — 30 × 10mg Tablet\n3. Metformin HCl — 30 × 10mg Tablet\nAll of them at one chain, by the sum of the card prices seen (low to high):\n- Walmart (TX price): $27.22 for 3 medicines, prices observed 2026-09-27 to 2026-09-30 (#1 $14.22, #2 $9.00, #3 $4.00) · nearest store 1.0 mi\n- CVS: $86.32 for 3 medicines, prices observed 2026-09-27 to 2026-10-02 (#1 $59.98, #2 $15.34, #3 $11.00) · nearest store 1.0 mi\n- HEB: no card price seen for #3\nOne chain per medicine: $22.22 across 2 chains, prices observed 2026-09-27 (#1 Walmart, #2 HEB, #3 Walmart).\n1 of the names matched no medicine and were left out — ask for the spelling.\nA sum adds up observed card prices; it is not a quote.\nThe card price is set per chain (Walmart: per state), so choose the chain, not the address.\nWe don't see stock — call the pharmacy before you go.\n\nNext (calls that fit this answer, arguments filled in from it):\n- get_savings_card() — One card covers every medicine in the list.\n- find_nearby_pharmacies(family=\"walmart\", zip=\"77002\") — Addresses of the first chain in the list.\n- ask which of the matches they mean, then compare_prices() — Other strengths or pack sizes of one of them.\n\n**Free FineRx card:** BIN 610219 · PCN DRX · Group MYCARD3993\nUse the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial — estimated prices are on our site. Show the card at the pharmacy to get the final price.\n_Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice_"
+    }
+  ],
+  "structuredContent": {
+    "schema": "finerx.view/2",
+    "view": "basket",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "items": [
+        {
+          "drug": {
+            "slug": "atorvastatin-calcium",
+            "name": "Atorvastatin Calcium",
+            "kind": "generic"
+          },
+          "package": {
+            "form": "Tablet",
+            "strength": "10mg",
+            "quantity": 30,
+            "label": "30 × 10mg Tablet"
+          },
+          "coverage": {
+            "status": "exact",
+            "quantities": []
+          },
+          "priced": true
+        },
+        {
+          "drug": {
+            "slug": "lisinopril",
+            "name": "Lisinopril",
+            "kind": "generic"
+          },
+          "package": {
+            "form": "Tablet",
+            "strength": "10mg",
+            "quantity": 30,
+            "label": "30 × 10mg Tablet"
+          },
+          "coverage": {
+            "status": "exact",
+            "quantities": []
+          },
+          "priced": true
+        },
+        {
+          "drug": {
+            "slug": "metformin-hcl",
+            "name": "Metformin HCl",
+            "kind": "generic"
+          },
+          "package": {
+            "form": "Tablet",
+            "strength": "10mg",
+            "quantity": 30,
+            "label": "30 × 10mg Tablet"
+          },
+          "coverage": {
+            "status": "exact",
+            "quantities": []
+          },
+          "priced": true
+        }
+      ],
+      "origin": {
+        "zip": "77002",
+        "city": "Houston",
+        "state": "TX",
+        "precision": "zip"
+      },
+      "rows": [
+        {
+          "family": "walmart",
+          "name": "Walmart",
+          "zone": "tx",
+          "nearestMiles": 1.0,
+          "storeCount": 2,
+          "prices": [
+            {
+              "amount": 14.22,
+              "observedAt": "2026-09-27"
+            },
+            {
+              "amount": 9.0,
+              "observedAt": "2026-09-30"
+            },
+            {
+              "amount": 4.0,
+              "observedAt": "2026-09-27"
+            }
+          ],
+          "total": {
+            "amount": 27.22,
+            "count": 3,
+            "observedFrom": "2026-09-27",
+            "observedTo": "2026-09-30"
+          },
+          "missing": []
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "zone": null,
+          "nearestMiles": 1.0,
+          "storeCount": 2,
+          "prices": [
+            {
+              "amount": 59.98,
+              "observedAt": "2026-10-02"
+            },
+            {
+              "amount": 15.34,
+              "observedAt": "2026-10-02"
+            },
+            {
+              "amount": 11.0,
+              "observedAt": "2026-09-27"
+            }
+          ],
+          "total": {
+            "amount": 86.32,
+            "count": 3,
+            "observedFrom": "2026-09-27",
+            "observedTo": "2026-10-02"
+          },
+          "missing": []
+        },
+        {
+          "family": "heb",
+          "name": "HEB",
+          "zone": null,
+          "nearestMiles": 1.0,
+          "storeCount": 2,
+          "prices": [
+            {
+              "amount": 15.62,
+              "observedAt": "2026-09-27"
+            },
+            {
+              "amount": 4.0,
+              "observedAt": "2026-09-27"
+            },
+            null
+          ],
+          "total": null,
+          "missing": [
+            3
+          ]
+        }
+      ],
+      "moreCount": 0,
+      "split": {
+        "amount": 22.22,
+        "count": 3,
+        "observedFrom": "2026-09-27",
+        "observedTo": "2026-09-27",
+        "chains": 2,
+        "picks": [
+          {
+            "item": 1,
+            "family": "walmart",
+            "name": "Walmart"
+          },
+          {
+            "item": 2,
+            "family": "heb",
+            "name": "HEB"
+          },
+          {
+            "item": 3,
+            "family": "walmart",
+            "name": "Walmart"
+          }
+        ]
+      },
+      "needsZip": false,
+      "unmatched": 1
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": null,
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial — estimated prices are on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 36,
+      "siteUrl": "https://www.finerxfinder.com/en/card?src=mcp",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=mcp",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    },
+    "next": [
+      {
+        "tool": "get_savings_card",
+        "args": {},
+        "why": "One card covers every medicine in the list."
+      },
+      {
+        "tool": "find_nearby_pharmacies",
+        "args": {
+          "family": "walmart",
+          "zip": "77002"
+        },
+        "why": "Addresses of the first chain in the list."
+      },
+      {
+        "tool": "compare_prices",
+        "args": {},
+        "why": "Other strengths or pack sizes of one of them.",
+        "ask": "which_medicine"
+      }
+    ]
+  },
+  "_meta": {
+    "finerx/build": "fixture",
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "zipPlaceholder": "ZIP code",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "print": "Print",
+      "email": "Email",
+      "sms": "Text message",
+      "copy": "Copy",
+      "copied": "Copied",
+      "noPrice": "We haven't seen a card price for this package yet. Estimated prices are on our site; show the card at the pharmacy to get the final price.",
+      "otherQuantities": "Card prices we have seen for other quantities:",
+      "needsZip": "Enter a ZIP code to see pharmacies near you. These are card prices by chain.",
+      "notInsurance": "Not insurance",
+      "cardTitle": "Prescription Discount Card",
+      "cardSub": "Free · no signup · show it to your pharmacist",
+      "howToTitle": "At the pharmacy counter",
+      "step1": "Show the card, or read out BIN, PCN and Group.",
+      "step2": "Ask them to run it as a discount card, not as insurance.",
+      "step3": "Ask the price with the card and without it, and pay the lower one.",
+      "moreChainOne": "+ 1 more chain",
+      "loading": "Loading prices…",
+      "error": "Prices didn't load. The card still works.",
+      "storeInStore": "pharmacy in store (not verified)",
+      "noStock": "We don't see stock — call the pharmacy before you go.",
+      "bin": "BIN",
+      "pcn": "PCN",
+      "group": "Group",
+      "zipGo": "OK",
+      "zipInvalid": "Enter a 5-digit ZIP code",
+      "other": "Other",
+      "wallet": "Wallet (printable card)",
+      "emailPlaceholder": "Your email",
+      "emailSend": "Send card",
+      "emailConsent": "We’ll send one email with your card. We don’t store your address and won’t email you again.",
+      "sending": "Sending…",
+      "emailSent": "Sent — check your inbox",
+      "emailError": "Couldn't send — try again",
+      "actionError": "That didn't load. Try again.",
+      "directions": "Directions",
+      "allFamilies": "All",
+      "pharmaciesTitle": "Pharmacies nearby",
+      "pricesWithoutStores": "Card price, no store nearby:",
+      "showMore": "Show {n} more",
+      "close": "Close",
+      "noPriceShort": "no card price seen",
+      "priceAt": "{price} {withCard} at {name}",
+      "where": "Where:",
+      "wherePlaceholder": "ZIP, city or address",
+      "changeWhere": "change location",
+      "whereInvalid": "Enter a 5-digit ZIP code, a city or an address",
+      "needsWhere": "Enter a ZIP code, a city or an address to see pharmacies near you. These are card prices by chain.",
+      "whereNote": "An address is sent once to the US Census geocoder to find pharmacies nearby. We don't store it.",
+      "inn": "Active ingredient",
+      "searchTitle": "Find a medicine",
+      "searchPlaceholder": "Medicine, or a brand from your country",
+      "openSearch": "Search",
+      "popular": "Often searched:",
+      "searching": "Searching…",
+      "noResults": "Nothing found. Try the active ingredient, or check the spelling.",
+      "fromWithCard": "with card from {price} · {date}",
+      "kindGeneric": "generic",
+      "kindBrand": "brand",
+      "foreignBrand": "foreign brand",
+      "inUs": "in the US: {name}",
+      "noUsProduct": "no US product listed",
+      "backToSearch": "Back to search",
+      "back": "Back",
+      "onMap": "On the map",
+      "listView": "List",
+      "you": "You",
+      "mapTitle": "Pharmacies on a map",
+      "mapRange": "Range",
+      "offMap": "{n} farther than {r} mi — in the list",
+      "equivalentUs": "In the US",
+      "usClassSameInn": "same active ingredient",
+      "usClassRxAlternative": "not sold in the US as the same product",
+      "usClassNoEquivalent": "no US equivalent",
+      "sameInnNote": "Same active ingredient is not the same product — ask a pharmacist.",
+      "pricesInUs": "Prices in the US",
+      "rxTitle": "How to get a prescription: {name}",
+      "rxTitleAny": "How to get a prescription",
+      "rxRestricted": "For this medicine FineRx shows only card prices and the free card. Discuss treatment with a licensed clinician.",
+      "pricesWithCard": "Prices with the card",
+      "withoutInsurance": "Without insurance:",
+      "basketTitle": "{n} medicines",
+      "basketOneChain": "All at one chain, by the sum of card prices",
+      "basketTotal": "Sum for all {n}",
+      "basketMissing": "no card price for {items}",
+      "basketSplit": "One chain per medicine: {price} across {n} chains",
+      "basketDates": "prices observed {dates}",
+      "basketUnmatched": "{n} not found and left out",
+      "basketLeftOut": "The sums leave out {items}: no card price seen.",
+      "compareLine": "Against {price}: {below} of {n} chains were seen below it",
+      "compareNote": "A card price replaces insurance for that fill: it is not added to a copay and may not count toward a deductible.",
+      "belowAmount": "below {price}",
+      "packagesTitle": "Strengths and pack sizes with a card price",
+      "chainsPriced": "{n} chains",
+      "moreStrengths": "+ {n} more strengths — name the one you take",
+      "equivalentsTitle": "Medicines from abroad: what each is in the US",
+      "equivalentsUnmatched": "{n} not in our reviewed list — left out",
+      "transferTitle": "Move a prescription to {name}",
+      "transferTitleAny": "Move a prescription to another pharmacy",
+      "transferStores": "Nearest stores",
+      "qrScan": "At a computer? Scan to open the card on your phone.",
+      "basketSum": "A sum adds up observed card prices. It is not a quote: the pharmacy sets the final price."
+    }
+  }
+}

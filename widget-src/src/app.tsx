@@ -8,7 +8,7 @@ import type { Bridge, BridgeEvent, DisplayMode, HostContext } from "./bridge";
 import { Ctx, type AppCtx } from "./context";
 import { makeT } from "./labels";
 import { interpret, type Interpreted } from "./result";
-import type { CardView, Envelope, EquivalentData, Labels, Origin, PharmaciesData, PricesData, ToolResultLike } from "./types";
+import type { BasketData, CardView, Envelope, EquivalentData, Labels, Origin, PharmaciesData, PricesData, ToolResultLike } from "./types";
 import { Counter } from "./components/Counter";
 import { PricesView } from "./views/Prices";
 import { PharmaciesView } from "./views/Pharmacies";
@@ -16,6 +16,10 @@ import { CardViewPage } from "./views/Card";
 import { SearchView } from "./views/Search";
 import { EquivalentView } from "./views/Equivalent";
 import { RxView } from "./views/Rx";
+import { BasketView } from "./views/Basket";
+import { PackagesView } from "./views/Packages";
+import { EquivalentsView } from "./views/Equivalents";
+import { TransferView } from "./views/Transfer";
 import { Empty, ErrorState, Fallback, Loading } from "./views/States";
 
 type Screen =
@@ -69,6 +73,12 @@ export function modelNote(env: Envelope): string | null {
     const what = d.drug?.name ? ` for ${d.drug.name}${d.package?.label ? ` (${d.package.label})` : ""}` : "";
     return `Person opened pharmacies${what}${placeNote(d.origin)} in the FineRx card.`;
   }
+  if (env.view === "basket") {
+    const d = (env.data || {}) as BasketData;
+    const names = (d.items || []).map((it) => it.drug && it.drug.name).filter(Boolean);
+    if (!names.length) return null;
+    return `Person is looking at ${names.join(", ")} together${placeNote(d.origin)} in the FineRx card; it shows the sum of card prices per pharmacy chain.`;
+  }
   if (env.view === "equivalent") {
     const d = (env.data || {}) as EquivalentData;
     if (!d.brand) return null;
@@ -78,7 +88,7 @@ export function modelNote(env: Envelope): string | null {
 }
 
 /** The views a person can step BACK to from the one a pick replaced them with. */
-const BACKABLE = new Set(["search", "equivalent", "rx", "prices"]);
+const BACKABLE = new Set(["search", "equivalent", "rx", "prices", "basket", "packages", "equivalents", "transfer"]);
 
 export function App({ bridge }: { bridge: Bridge }) {
   const [screen, setScreen] = useState<Screen>({ kind: "empty" });
@@ -164,6 +174,7 @@ export function App({ bridge }: { bridge: Bridge }) {
 
   const rememberState = useCallback(
     (env: Envelope, zip: string | null) => {
+      if (env.view === "basket" || env.view === "packages" || env.view === "equivalents" || env.view === "transfer") return; // not one package to bring back
       const d = env.data as PricesData | PharmaciesData;
       const pkg = (d && (d as PricesData).package) || {};
       const state: Record<string, unknown> = {
@@ -296,7 +307,15 @@ export function App({ bridge }: { bridge: Bridge }) {
               ? EquivalentView
               : env.view === "rx"
                 ? RxView
-                : CardViewPage;
+                : env.view === "basket"
+                  ? BasketView
+                  : env.view === "packages"
+                    ? PackagesView
+                    : env.view === "equivalents"
+                      ? EquivalentsView
+                      : env.view === "transfer"
+                        ? TransferView
+                        : CardViewPage;
     body = <View env={env} />;
   } else body = <Empty english={/^en\b/i.test(locale)} />;
 

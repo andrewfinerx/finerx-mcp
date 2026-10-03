@@ -9,6 +9,10 @@ export const KNOWN_VIEWS: ReadonlySet<string> = new Set<ViewName>([
   "search",
   "equivalent",
   "rx",
+  "basket",
+  "packages",
+  "equivalents",
+  "transfer",
 ]);
 
 export type Interpreted =
@@ -43,6 +47,9 @@ function hasViewData(env: Envelope): boolean {
   const d = env.data;
   if (!isObject(d)) return false;
   if (env.view === "prices") return isObject(d.drug) && typeof d.drug.slug === "string";
+  if (env.view === "equivalents") return Array.isArray(d.items) && d.items.some((it: any) => isObject(it) && (it.brand || it.inn));
+  if (env.view === "packages") return isObject(d.drug) && typeof d.drug.slug === "string";
+  if (env.view === "basket") return Array.isArray(d.items) && d.items.some((it: any) => isObject(it) && isObject(it.drug) && typeof it.drug.slug === "string");
   return true; // pharmacies / card / search / equivalent / rx draw from partial data
 }
 

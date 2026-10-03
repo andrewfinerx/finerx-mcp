@@ -93,6 +93,41 @@ select.chip { appearance: none; -webkit-appearance: none; padding-inline-end: 12
   .rows:not(.stores) .row .meta { grid-column: auto; text-align: end; }
 }
 .amt.big { font-size: 1.5rem; font-weight: 800; }
+
+/* --- card QR (MCP 2.2): for a person at a computer; hidden on a phone ------ */
+.qr { display: none; align-items: center; gap: 12px; }
+.qr svg { flex: none; border-radius: 6px; }
+@media (min-width: 480px) { .qr { display: flex; } }
+
+/* --- transfer (MCP 2.2) -------------------------------------------------- */
+.steps { margin: 0; padding-inline-start: 1.4em; }
+.steps li { padding: 3px 0; }
+.steps li::marker { font-weight: 700; }
+.notes { margin: 0; padding-inline-start: 1.2em; }
+.notes li { padding: 1px 0; }
+
+/* --- equivalents (MCP 2.2) ---------------------------------------------- */
+.eq-list { margin: 0; padding: 0; list-style: none; }
+.eq { padding: 8px 0; border-top: 1px solid var(--color-border-secondary, var(--fx-soft)); }
+.eq:first-child { border-top: 0; padding-top: 0; }
+.eq > * + * { margin-top: 4px; }
+.eq-head .name { font-weight: 700; }
+.eq-head .badge { margin-inline-start: 8px; }
+
+/* --- packages (MCP 2.2) ------------------------------------------------- */
+.pkg-h { margin: 0 0 2px; font-size: 0.92rem; font-weight: 700; }
+.pkg .row.on .name { text-decoration: underline; text-decoration-thickness: 2px; }
+.pkg .row .name { text-align: start; font-weight: 600; }
+@media (min-width: 480px) {
+  .pkg .rows .row { grid-template-columns: minmax(0, 1fr) auto 12.5rem; }
+}
+
+/* --- basket (MCP 2.2) --------------------------------------------------- */
+.basket-items { margin: 0; padding: 0; list-style: none; }
+.basket-items li { padding: 2px 0; overflow-wrap: anywhere; }
+.basket-items .item { text-align: start; }
+.basket-items .num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.rows.basket .parts { grid-column: 1 / -1; font-size: 0.8rem; color: var(--color-text-secondary, var(--fx-muted)); font-variant-numeric: tabular-nums; }
 .headline { font-size: 0.92rem; }
 [dir="ltr"] { unicode-bidi: isolate; }
 

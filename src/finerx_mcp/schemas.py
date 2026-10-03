@@ -120,6 +120,17 @@ class PriceWithoutStore(_M):
     price: Price
 
 
+class CompareTo(_M):
+    """An amount the person named (a copay, what they pay now, a target) and how
+    many of the chains with a card price were seen below it."""
+
+    amount: float
+    below: int
+    of: int
+    observedFrom: date
+    observedTo: date
+
+
 class PricesData(_M):
     drug: DrugRef
     package: PackageRef
@@ -130,6 +141,7 @@ class PricesData(_M):
     moreCount: int = 0
     needsZip: bool
     coverage: Coverage
+    compareTo: CompareTo | None = None
 
 
 class Store(_M):
@@ -152,9 +164,17 @@ class PharmaciesData(_M):
     families: list[str] = []
 
 
+class QrCode(_M):
+    """The card page as a QR: square rows of "0"/"1" the widget draws itself."""
+
+    url: str = Field(pattern=r"^https://\S+$")
+    rows: list[str] = Field(min_length=21, max_length=61)
+
+
 class CardData(_M):
     drug: DrugRef | None = None
     priceWithCard: PriceWithCard | None = None
+    qr: QrCode | None = None
 
 
 # --- phase 2 (MCP 2.1, contract C2'): search / equivalent / rx ------------------
@@ -247,6 +267,113 @@ class RxData(_M):
     readerLocale: str | None = None
 
 
+# --- MCP 2.2: transfer — moving a prescription to another pharmacy ---------------
+
+
+class ChainRef(_M):
+    family: str
+    name: str
+
+
+class TransferData(_M):
+    chain: ChainRef | None = None
+    drug: DrugRef | None = None
+    package: PackageRef | None = None
+    # The chain's card price for the package, when a drug was named.
+    price: Price | None = None
+    # Our own fixed sentences, in the reader's language where we have them.
+    steps: list[str] = Field(default=[], max_length=4)
+    notes: list[str] = Field(default=[], max_length=3)
+    stores: list[Store] = Field(default=[], max_length=3)
+    origin: Origin
+    restricted: bool
+    note: str | None = None
+
+
+# --- MCP 2.2: equivalents — several medicines from another country ---------------
+
+
+class EquivalentItem(EquivalentData):
+    brandSlug: str | None = None
+
+
+class EquivalentsData(_M):
+    items: list[EquivalentItem] = Field(max_length=6)
+    # Names that matched no reviewed brand (the count only).
+    unmatched: int = 0
+
+
+# --- MCP 2.2: packages — the strengths and pack sizes of one medicine --------------
+
+
+class PackagesData(_M):
+    drug: DrugRef
+    configs: list[ConfigOption] = Field(default=[], max_length=6)
+    # Strengths with a card price that are not in ``configs``.
+    moreCount: int = 0
+    # The package the most chains price (what compare_prices opens with).
+    default: PackageRef | None = None
+
+
+# --- MCP 2.2: the basket — several medicines at one place ------------------------
+
+
+class BasketItem(_M):
+    drug: DrugRef
+    package: PackageRef
+    coverage: Coverage
+    # False = no listed chain was seen pricing it: it is left out of every sum.
+    priced: bool = True
+
+
+class BasketTotal(_M):
+    """A sum of observed card prices with the span of their observation dates —
+    an amount still never travels without a date."""
+
+    amount: float
+    # How many of the items the sum adds (the priced ones).
+    count: int
+    observedFrom: date
+    observedTo: date
+
+
+class BasketRow(_M):
+    family: str
+    name: str
+    zone: str | None = None
+    nearestMiles: float | None = None
+    storeCount: int = 0
+    # One per item, in the items' order; None = no card price seen there.
+    prices: list[Price | None] = Field(max_length=6)
+    # Only when every item has a price at this chain.
+    total: BasketTotal | None = None
+    # 1-based numbers of the PRICED items without a price here.
+    missing: list[int] = []
+
+
+class BasketPick(_M):
+    # 1-based number of the item this chain is for.
+    item: int
+    family: str
+    name: str
+
+
+class BasketSplit(BasketTotal):
+    chains: int
+    picks: list[BasketPick] = Field(max_length=6)
+
+
+class BasketData(_M):
+    items: list[BasketItem] = Field(max_length=6)
+    origin: Origin
+    rows: list[BasketRow] = Field(max_length=8)
+    moreCount: int = 0
+    split: BasketSplit | None = None
+    needsZip: bool
+    # Names that matched no medicine (the count only — the text is not echoed).
+    unmatched: int = 0
+
+
 class ErrorInfo(_M):
     code: str
     message: str | None = None
@@ -259,8 +386,19 @@ class Notice(_M):
     ``zip_invalid`` — the ZIP given is not 5 digits; ``where_not_found`` — the
     typed place (``where``) could not be placed (phase 2)."""
 
-    code: Literal["zip_invalid", "where_not_found"]
+    code: Literal["zip_invalid", "where_not_found", "basket_trimmed"]
     message: str = Field(min_length=1)
+
+
+class NextStep(_M):
+    """One call that fits after this answer (``next_steps``): the arguments are
+    filled in from the answer; ``ask`` names the one thing to get from the
+    person first. For the model — the widget does not draw it."""
+
+    tool: str = Field(min_length=1)
+    args: dict[str, str | int | bool | list[str]] = {}
+    why: str = Field(min_length=1)
+    ask: Literal["zip", "medicine", "which_medicine", "email_and_consent"] | None = None
 
 
 class _Envelope(_M):
@@ -270,6 +408,7 @@ class _Envelope(_M):
     card: CardView
     error: ErrorInfo | None = None
     notice: Notice | None = None
+    next: list[NextStep] | None = Field(default=None, max_length=3)
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -313,7 +452,33 @@ class RxEnvelope(_LegacyEnvelope):
     data: RxData | None = None
 
 
+class BasketEnvelope(_Envelope):
+    view: Literal["basket"]
+    data: BasketData | None = None
+
+
+class PackagesEnvelope(_LegacyEnvelope):
+    """``get_drug`` keeps every 2.0 key beside the envelope."""
+
+    view: Literal["packages"]
+    data: PackagesData | None = None
+
+
+class EquivalentsEnvelope(_Envelope):
+    view: Literal["equivalents"]
+    data: EquivalentsData | None = None
+
+
+class TransferEnvelope(_Envelope):
+    view: Literal["transfer"]
+    data: TransferData | None = None
+
+
 ENVELOPES: dict[str, type[_Envelope]] = {
+    "transfer": TransferEnvelope,
+    "equivalents": EquivalentsEnvelope,
+    "packages": PackagesEnvelope,
+    "basket": BasketEnvelope,
     "prices": PricesEnvelope,
     "pharmacies": PharmaciesEnvelope,
     "card": CardEnvelope,

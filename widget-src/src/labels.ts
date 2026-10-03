@@ -106,6 +106,28 @@ export const FALLBACK_LABELS: Labels = {
     "For this medicine FineRx shows only card prices and the free card. Discuss treatment with a licensed clinician.",
   pricesWithCard: "Prices with the card",
   withoutInsurance: "Without insurance:",
+  // --- MCP 2.2: the basket (several medicines at one place) ---------------
+  basketTitle: "{n} medicines",
+  basketOneChain: "All at one chain, by the sum of card prices",
+  basketTotal: "Sum for all {n}",
+  basketMissing: "no card price for {items}",
+  basketSplit: "One chain per medicine: {price} across {n} chains",
+  basketDates: "prices observed {dates}",
+  basketUnmatched: "{n} not found and left out",
+  basketLeftOut: "The sums leave out {items}: no card price seen.",
+  qrScan: "At a computer? Scan to open the card on your phone.",
+  transferTitle: "Move a prescription to {name}",
+  transferTitleAny: "Move a prescription to another pharmacy",
+  transferStores: "Nearest stores",
+  equivalentsTitle: "Medicines from abroad: what each is in the US",
+  equivalentsUnmatched: "{n} not in our reviewed list — left out",
+  packagesTitle: "Strengths and pack sizes with a card price",
+  moreStrengths: "+ {n} more strengths — name the one you take",
+  chainsPriced: "{n} chains",
+  compareLine: "Against {price}: {below} of {n} chains were seen below it",
+  compareNote: "A card price replaces insurance for that fill: it is not added to a copay and may not count toward a deductible.",
+  belowAmount: "below {price}",
+  basketSum: "A sum adds up observed card prices. It is not a quote: the pharmacy sets the final price.",
 };
 
 export function fill(template: string, vars?: Record<string, string | number>): string {

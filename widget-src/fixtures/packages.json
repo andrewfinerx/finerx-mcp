@@ -1,0 +1,367 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "**Atorvastatin Calcium** (generic) — slug atorvastatin-calcium\nStrengths and pack sizes with a card price: 10mg Tablet (30, 90, 45); 20mg Tablet (30).\nCard price from $9.40 for 30 × 20mg Tablet, observed 2026-09-21.\nDefault package 30 × 10mg Tablet — card price by chain:\n- Hy-Vee: $11.99 with the card, observed 2026-09-20\n- Walmart (TX price): $13.80 with the card, observed 2026-09-20\n- CVS: $24.50 with the card, observed 2026-09-18\n\nNext (calls that fit this answer, arguments filled in from it):\n- compare_prices(drug=\"atorvastatin-calcium\", strength=\"10mg\", form=\"Tablet\", quantity=30) — Prices near the person. The package filled in is the one most chains price; use the person's own strength and quantity when they gave them.\n- get_savings_card(drug=\"atorvastatin-calcium\") — The card that gets these prices.\n- get_prescription_options(drug=\"atorvastatin-calcium\") — Only if the person says they have no prescription yet.\n\n**Free FineRx card:** BIN 610219 · PCN DRX · Group MYCARD3993\nUse the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $11.99 (observed 2026-09-20), more on our site. Show the card at the pharmacy to get the final price.\n_Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice_"
+    }
+  ],
+  "structuredContent": {
+    "name": "Atorvastatin Calcium",
+    "slug": "atorvastatin-calcium",
+    "kind": "generic",
+    "configs": [
+      {
+        "form": "Tablet",
+        "strength": "10mg",
+        "label": "10mg Tablet",
+        "quantities": [
+          {
+            "quantity": 30,
+            "label": "30 × 10mg Tablet",
+            "cardFrom": {
+              "amount": 11.62,
+              "observedAt": "2026-09-20"
+            },
+            "chainsPriced": 16
+          },
+          {
+            "quantity": 90,
+            "label": "90 × 10mg Tablet",
+            "cardFrom": {
+              "amount": 19.8,
+              "observedAt": "2026-09-19"
+            },
+            "chainsPriced": 14
+          },
+          {
+            "quantity": 45,
+            "label": "45 × 10mg Tablet",
+            "cardFrom": null,
+            "chainsPriced": 0
+          }
+        ]
+      },
+      {
+        "form": "Tablet",
+        "strength": "20mg",
+        "label": "20mg Tablet",
+        "quantities": [
+          {
+            "quantity": 30,
+            "label": "30 × 20mg Tablet",
+            "cardFrom": {
+              "amount": 9.4,
+              "observedAt": "2026-09-21"
+            },
+            "chainsPriced": 15
+          }
+        ]
+      }
+    ],
+    "defaultConfig": {
+      "form": "Tablet",
+      "strength": "10mg",
+      "quantity": 30
+    },
+    "fromCardPrice": {
+      "amount": 9.4,
+      "observedAt": "2026-09-21",
+      "package": "30 × 20mg Tablet"
+    },
+    "defaultPackage": {
+      "package": {
+        "form": "Tablet",
+        "strength": "10mg",
+        "quantity": 30,
+        "label": "30 × 10mg Tablet"
+      },
+      "coverage": {
+        "status": "exact",
+        "quantities": [
+          10,
+          30,
+          45,
+          60,
+          90,
+          100
+        ]
+      },
+      "chains": [
+        {
+          "family": "hyvee",
+          "name": "Hy-Vee",
+          "price": {
+            "amount": 11.99,
+            "observedAt": "2026-09-20"
+          },
+          "zone": null
+        },
+        {
+          "family": "walmart",
+          "name": "Walmart",
+          "price": {
+            "amount": 13.8,
+            "observedAt": "2026-09-20"
+          },
+          "zone": "tx"
+        },
+        {
+          "family": "cvs",
+          "name": "CVS",
+          "price": {
+            "amount": 24.5,
+            "observedAt": "2026-09-18"
+          },
+          "zone": null
+        },
+        {
+          "family": "walgreens",
+          "name": "Walgreens",
+          "price": {
+            "amount": 31.0,
+            "observedAt": "2026-09-19"
+          },
+          "zone": null
+        },
+        {
+          "family": "capsule",
+          "name": "Capsule",
+          "price": null,
+          "zone": null
+        }
+      ]
+    },
+    "card": {
+      "codes": {
+        "bin": "610219",
+        "pcn": "DRX",
+        "group": "MYCARD3993"
+      },
+      "priceWithCard": {
+        "amount": 11.99,
+        "family": "hyvee",
+        "name": "Hy-Vee",
+        "observedAt": "2026-09-20"
+      },
+      "law": "Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it, print it, email or text it. Savings with the card can be substantial: estimated price with the card is $11.99 (observed 2026-09-20), more on our site. Show the card at the pharmacy to get the final price.",
+      "fine": "Not insurance · prices observed 2026-09-20 · FineRx may earn a fee · not medical advice",
+      "chainsCount": 36,
+      "siteUrl": "https://www.finerxfinder.com/en/drug/atorvastatin-calcium?src=mcp",
+      "printUrl": "https://www.finerxfinder.com/en/card/print?src=mcp",
+      "actions": {
+        "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+        "emailEnabled": true
+      }
+    },
+    "schema": "finerx.view/2",
+    "view": "packages",
+    "locale": "en",
+    "dir": "ltr",
+    "data": {
+      "drug": {
+        "slug": "atorvastatin-calcium",
+        "name": "Atorvastatin Calcium",
+        "kind": "generic"
+      },
+      "configs": [
+        {
+          "form": "Tablet",
+          "strength": "10mg",
+          "label": "10mg Tablet",
+          "quantities": [
+            {
+              "quantity": 30,
+              "label": "30 × 10mg Tablet",
+              "cardFrom": {
+                "amount": 11.62,
+                "observedAt": "2026-09-20"
+              },
+              "chainsPriced": 16
+            },
+            {
+              "quantity": 45,
+              "label": "45 × 10mg Tablet",
+              "cardFrom": null,
+              "chainsPriced": 0
+            },
+            {
+              "quantity": 90,
+              "label": "90 × 10mg Tablet",
+              "cardFrom": {
+                "amount": 19.8,
+                "observedAt": "2026-09-19"
+              },
+              "chainsPriced": 14
+            }
+          ]
+        },
+        {
+          "form": "Tablet",
+          "strength": "20mg",
+          "label": "20mg Tablet",
+          "quantities": [
+            {
+              "quantity": 30,
+              "label": "30 × 20mg Tablet",
+              "cardFrom": {
+                "amount": 9.4,
+                "observedAt": "2026-09-21"
+              },
+              "chainsPriced": 15
+            }
+          ]
+        }
+      ],
+      "moreCount": 0,
+      "default": {
+        "form": "Tablet",
+        "strength": "10mg",
+        "quantity": 30
+      }
+    },
+    "next": [
+      {
+        "tool": "compare_prices",
+        "args": {
+          "drug": "atorvastatin-calcium",
+          "strength": "10mg",
+          "form": "Tablet",
+          "quantity": 30
+        },
+        "why": "Prices near the person. The package filled in is the one most chains price; use the person's own strength and quantity when they gave them."
+      },
+      {
+        "tool": "get_savings_card",
+        "args": {
+          "drug": "atorvastatin-calcium"
+        },
+        "why": "The card that gets these prices."
+      },
+      {
+        "tool": "get_prescription_options",
+        "args": {
+          "drug": "atorvastatin-calcium"
+        },
+        "why": "Only if the person says they have no prescription yet."
+      }
+    ]
+  },
+  "_meta": {
+    "finerx/build": "fixture",
+    "finerx/labels": {
+      "pricesTitle": "Price with the FineRx card, low to high",
+      "nearLabel": "Near {place}",
+      "approx": "(approximate)",
+      "changeZip": "change ZIP",
+      "zipPlaceholder": "ZIP code",
+      "withCard": "with card",
+      "observed": "observed {date}",
+      "miles": "{n} mi",
+      "moreChains": "+ {n} more chains",
+      "allPharmacies": "All pharmacies",
+      "showAtCounter": "Show at the counter",
+      "save": "Save",
+      "print": "Print",
+      "email": "Email",
+      "sms": "Text message",
+      "copy": "Copy",
+      "copied": "Copied",
+      "noPrice": "We haven't seen a card price for this package yet. Estimated prices are on our site; show the card at the pharmacy to get the final price.",
+      "otherQuantities": "Card prices we have seen for other quantities:",
+      "needsZip": "Enter a ZIP code to see pharmacies near you. These are card prices by chain.",
+      "notInsurance": "Not insurance",
+      "cardTitle": "Prescription Discount Card",
+      "cardSub": "Free · no signup · show it to your pharmacist",
+      "howToTitle": "At the pharmacy counter",
+      "step1": "Show the card, or read out BIN, PCN and Group.",
+      "step2": "Ask them to run it as a discount card, not as insurance.",
+      "step3": "Ask the price with the card and without it, and pay the lower one.",
+      "moreChainOne": "+ 1 more chain",
+      "loading": "Loading prices…",
+      "error": "Prices didn't load. The card still works.",
+      "storeInStore": "pharmacy in store (not verified)",
+      "noStock": "We don't see stock — call the pharmacy before you go.",
+      "bin": "BIN",
+      "pcn": "PCN",
+      "group": "Group",
+      "zipGo": "OK",
+      "zipInvalid": "Enter a 5-digit ZIP code",
+      "other": "Other",
+      "wallet": "Wallet (printable card)",
+      "emailPlaceholder": "Your email",
+      "emailSend": "Send card",
+      "emailConsent": "We’ll send one email with your card. We don’t store your address and won’t email you again.",
+      "sending": "Sending…",
+      "emailSent": "Sent — check your inbox",
+      "emailError": "Couldn't send — try again",
+      "actionError": "That didn't load. Try again.",
+      "directions": "Directions",
+      "allFamilies": "All",
+      "pharmaciesTitle": "Pharmacies nearby",
+      "pricesWithoutStores": "Card price, no store nearby:",
+      "showMore": "Show {n} more",
+      "close": "Close",
+      "noPriceShort": "no card price seen",
+      "priceAt": "{price} {withCard} at {name}",
+      "where": "Where:",
+      "wherePlaceholder": "ZIP, city or address",
+      "changeWhere": "change location",
+      "whereInvalid": "Enter a 5-digit ZIP code, a city or an address",
+      "needsWhere": "Enter a ZIP code, a city or an address to see pharmacies near you. These are card prices by chain.",
+      "whereNote": "An address is sent once to the US Census geocoder to find pharmacies nearby. We don't store it.",
+      "inn": "Active ingredient",
+      "searchTitle": "Find a medicine",
+      "searchPlaceholder": "Medicine, or a brand from your country",
+      "openSearch": "Search",
+      "popular": "Often searched:",
+      "searching": "Searching…",
+      "noResults": "Nothing found. Try the active ingredient, or check the spelling.",
+      "fromWithCard": "with card from {price} · {date}",
+      "kindGeneric": "generic",
+      "kindBrand": "brand",
+      "foreignBrand": "foreign brand",
+      "inUs": "in the US: {name}",
+      "noUsProduct": "no US product listed",
+      "backToSearch": "Back to search",
+      "back": "Back",
+      "onMap": "On the map",
+      "listView": "List",
+      "you": "You",
+      "mapTitle": "Pharmacies on a map",
+      "mapRange": "Range",
+      "offMap": "{n} farther than {r} mi — in the list",
+      "equivalentUs": "In the US",
+      "usClassSameInn": "same active ingredient",
+      "usClassRxAlternative": "not sold in the US as the same product",
+      "usClassNoEquivalent": "no US equivalent",
+      "sameInnNote": "Same active ingredient is not the same product — ask a pharmacist.",
+      "pricesInUs": "Prices in the US",
+      "rxTitle": "How to get a prescription: {name}",
+      "rxTitleAny": "How to get a prescription",
+      "rxRestricted": "For this medicine FineRx shows only card prices and the free card. Discuss treatment with a licensed clinician.",
+      "pricesWithCard": "Prices with the card",
+      "withoutInsurance": "Without insurance:",
+      "basketTitle": "{n} medicines",
+      "basketOneChain": "All at one chain, by the sum of card prices",
+      "basketTotal": "Sum for all {n}",
+      "basketMissing": "no card price for {items}",
+      "basketSplit": "One chain per medicine: {price} across {n} chains",
+      "basketDates": "prices observed {dates}",
+      "basketUnmatched": "{n} not found and left out",
+      "basketLeftOut": "The sums leave out {items}: no card price seen.",
+      "compareLine": "Against {price}: {below} of {n} chains were seen below it",
+      "compareNote": "A card price replaces insurance for that fill: it is not added to a copay and may not count toward a deductible.",
+      "belowAmount": "below {price}",
+      "packagesTitle": "Strengths and pack sizes with a card price",
+      "chainsPriced": "{n} chains",
+      "moreStrengths": "+ {n} more strengths — name the one you take",
+      "equivalentsTitle": "Medicines from abroad: what each is in the US",
+      "equivalentsUnmatched": "{n} not in our reviewed list — left out",
+      "transferTitle": "Move a prescription to {name}",
+      "transferTitleAny": "Move a prescription to another pharmacy",
+      "transferStores": "Nearest stores",
+      "qrScan": "At a computer? Scan to open the card on your phone.",
+      "basketSum": "A sum adds up observed card prices. It is not a quote: the pharmacy sets the final price."
+    }
+  }
+}

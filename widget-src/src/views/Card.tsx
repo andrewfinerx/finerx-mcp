@@ -37,7 +37,38 @@ export function CardViewPage({ env }: { env: Envelope }) {
           <li>{t("step3")}</li>
         </ol>
       </section>
+      <CardQr rows={data.qr && data.qr.rows} label={t("qrScan")} />
       <CardStrip card={env.card} secondary="save" face={false} />
+    </div>
+  );
+}
+
+/** The card page as a QR, drawn from the server's module rows (nothing is
+ * fetched). Always dark on white with a quiet zone — a scanner needs that in
+ * dark mode too. Square rows of "0"/"1" only; anything else draws nothing. */
+export function qrPath(rows: unknown): { d: string; size: number } | null {
+  if (!Array.isArray(rows) || rows.length < 21 || rows.length > 61) return null;
+  const n = rows.length;
+  let d = "";
+  for (let y = 0; y < n; y++) {
+    const row = rows[y];
+    if (typeof row !== "string" || row.length !== n || /[^01]/.test(row)) return null;
+    for (let x = 0; x < n; x++) if (row[x] === "1") d += `M${x} ${y}h1v1h-1z`;
+  }
+  return { d, size: n };
+}
+
+function CardQr({ rows, label }: { rows: unknown; label: string }) {
+  const qr = qrPath(rows);
+  if (!qr) return null;
+  const pad = 2;
+  return (
+    <div class="qr" data-testid="card-qr">
+      <svg viewBox={`${-pad} ${-pad} ${qr.size + pad * 2} ${qr.size + pad * 2}`} width="112" height="112" role="img" aria-label={label} shape-rendering="crispEdges">
+        <rect x={-pad} y={-pad} width={qr.size + pad * 2} height={qr.size + pad * 2} fill="#fff" />
+        <path d={qr.d} fill="#000" />
+      </svg>
+      <p class="small muted">{label}</p>
     </div>
   );
 }

@@ -33,6 +33,8 @@ export function PricesView({ env }: { env: Envelope }) {
   const status = coverage.status || "exact";
 
   const knownZip = personZip(origin, userZip);
+  const against =
+    data.compareTo && typeof data.compareTo.amount === "number" && data.compareTo.amount > 0 ? data.compareTo : null;
 
   // A typed place goes out once: a ZIP as `zip`, anything else as `where`
   // (geocoded by the server); later calls carry the ZIP it resolved to.
@@ -44,6 +46,8 @@ export function PricesView({ env }: { env: Envelope }) {
         form: pkg.form,
         strength: pkg.strength,
         quantity: pkg.quantity,
+        // The amount the person named stays with the package they look at.
+        compare_to: against ? against.amount : undefined,
         ...patch,
         ...(where || { zip: knownZip }),
       }),
@@ -89,6 +93,14 @@ export function PricesView({ env }: { env: Envelope }) {
 
       <LocationLine origin={origin} needsZip={!!data.needsZip} onWhere={(where) => refine({}, where)} />
 
+      {against && (
+        <div class="notice" data-testid="compare-to">
+          <p>
+            <strong>{t("compareLine", { price: money(against.amount, locale), below: against.below, n: against.of })}</strong>
+          </p>
+          <p class="small muted">{t("compareNote")}</p>
+        </div>
+      )}
       {status !== "exact" && <p class="notice">{t("noPrice")}</p>}
       {status === "other_quantities" && <OtherQuantities data={data} current={current} onPick={(q) => refine({ quantity: q })} />}
 
@@ -97,7 +109,7 @@ export function PricesView({ env }: { env: Envelope }) {
           <p class="caption">{t("pricesTitle")}</p>
           <ul class="rows" data-testid="price-rows">
             {listed.map((r) => (
-              <Row key={`${r.family}|${r.zone || ""}`} row={r} />
+              <Row key={`${r.family}|${r.zone || ""}`} row={r} against={against ? against.amount : null} />
             ))}
           </ul>
         </>
@@ -131,13 +143,15 @@ export function PricesView({ env }: { env: Envelope }) {
   );
 }
 
-function Row({ row }: { row: PriceRow }) {
+function Row({ row, against }: { row: PriceRow; against?: number | null }) {
   const { t, locale } = useApp();
+  const below = typeof against === "number" && hasPrice(row.price) && row.price.amount < against;
   const zone = zoneLabel(row.zone);
   const meta: string[] = [];
   if (typeof row.nearestMiles === "number") meta.push(t("miles", { n: miles(row.nearestMiles, locale) }));
   if (hasPrice(row.price)) meta.push(t("observed", { date: day(row.price.observedAt, locale) }));
   else meta.push(t("noPriceShort"));
+  if (below) meta.push(t("belowAmount", { price: money(against as number, locale) }));
   return (
     <li class="row">
       <span class="name">
