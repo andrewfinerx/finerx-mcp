@@ -160,19 +160,45 @@ select.chip { appearance: none; -webkit-appearance: none; padding-inline-end: 12
   .strip-top:not(.noface) { grid-template-columns: minmax(250px, 300px) 1fr; gap: 16px; }
 }
 .cardface {
-  position: relative; overflow: hidden; color: #fff; border-radius: 14px;
-  padding: 12px 14px 10px; min-width: 0;
-  background: linear-gradient(135deg, #1fa6a6 0%, #0c7c7c 100%);
+  position: relative; overflow: hidden; color: #fff; border-radius: 14px; min-width: 0;
+  display: flex; flex-direction: column; background: #ffffff;
   box-shadow: 0 6px 18px rgba(12, 124, 124, 0.28);
 }
-.cardface.full { padding: 18px 18px 14px; max-width: 26rem; }
+.cardface.full { max-width: 26rem; }
+.cf-face {
+  position: relative; padding: 12px 14px 10px;
+  background: linear-gradient(135deg, #1fa6a6 0%, #0c7c7c 100%);
+}
+.cardface.full .cf-face { padding: 18px 18px 14px; }
+/* round crowns along the foot of the face, white at 6 % / 10 % (decorative) */
+.cf-trees {
+  position: absolute; left: 0; bottom: 0; display: block; width: 100%; height: auto;
+  aspect-ratio: 416 / 70; pointer-events: none;
+}
+/* the faint wordmark, top-right and bleeding off the edge, clear of the trees */
 .cf-mark {
-  position: absolute; right: -0.3em; bottom: -0.4em; font-size: 3.4rem; font-weight: 900;
+  position: absolute; right: -0.26em; top: 0.125rem; font-size: 2.9rem; font-weight: 900;
   letter-spacing: -0.04em; line-height: 1; color: rgba(255, 255, 255, 0.1);
   pointer-events: none; user-select: none;
 }
-.cardface.full .cf-mark { font-size: 5rem; }
-.cf-inner { position: relative; }
+.cardface.full .cf-mark { font-size: clamp(3rem, 13vw, 4.25rem); }
+.cf-inner { position: relative; z-index: 1; }
+/* the slim white strip for the pharmacist: the Member / Cardholder ID is the
+   patient's 10-digit phone — label over hint, a line to write it on beside them
+   (on a row of its own when the language makes the hint too wide to share one) */
+.cf-member {
+  display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: 0.9rem; row-gap: 0.25rem;
+  padding: 6px 14px 8px; background: #ffffff; color: #12302f; line-height: 1.25;
+}
+.cardface.full .cf-member { padding: 8px 18px 10px; }
+.cf-member-text { flex: 0 1 auto; min-width: 0; }
+.cf-mk { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #0c6b6b; }
+.cf-mh { margin-top: 1px; font-size: 0.74rem; font-weight: 700; }
+.cardface.full .cf-mk { font-size: 0.62rem; }
+.cardface.full .cf-mh { font-size: 0.82rem; }
+/* 4.5rem: beside the English hint even in the 250–300 px column of the inline strip */
+.cf-line { flex: 1 1 4.5rem; height: 1.15rem; margin-bottom: 0.2rem; border-bottom: 1.5px solid #12302f; }
+.cardface.full .cf-line { flex-basis: 7rem; height: 1.35rem; }
 .cf-brand { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.92); }
 .cf-title { margin-top: 1px; font-size: 1rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
 .cardface.full .cf-title { font-size: 1.3rem; }
@@ -249,7 +275,11 @@ select.chip { appearance: none; -webkit-appearance: none; padding-inline-end: 12
   margin: 0; font: 800 clamp(2rem, 9vw, 3.2rem)/1.1 var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   letter-spacing: 0.04em;
 }
-.counter-price { font-size: 1rem; }
+/* the Member / Cardholder ID for the pharmacist — no price on this screen */
+.counter-member { display: grid; gap: 2px; justify-self: stretch; padding-top: 12px; border-top: 2px solid currentColor; }
+.counter-mk { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.counter-mh { font-size: clamp(1.5rem, 6.5vw, 2.2rem); font-weight: 800; line-height: 1.15; }
+.counter-mline { margin-top: 6px; font-size: 1.05rem; font-weight: 600; }
 .counter-ni { font-size: 1.1rem; font-weight: 800; }
 
 /* --- phase 2: fullscreen, back, search ----------------------------------- */

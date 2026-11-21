@@ -1,16 +1,20 @@
-// view=card (spec §4.4): the price the card was seen at, if any, then the card
-// strip with "Show at the counter" + "Save ▾" (Wallet, print, email, SMS).
+// view=card (spec §4.4): the card face, the four counter steps, the QR, then the
+// card strip with the law, "Show at the counter" + "Save ▾" (Wallet, print,
+// email, SMS).
+//
+// No price on the card or above it (owner, 2026-11-21): a big price over the
+// face reads as the card's price, and a screenshot keeps it after it changed.
+// The dated price of a named drug stays in the law sentence beside the card
+// (and in the text the model reads); the price views carry the rest.
 
 import { useApp } from "../context";
 import { CardStrip, CodesLine } from "../components/CardStrip";
 import { codesOf } from "../card";
-import { day, hasPrice, money } from "../format";
 import type { CardData, Envelope } from "../types";
 
 export function CardViewPage({ env }: { env: Envelope }) {
-  const { t, locale } = useApp();
+  const { t } = useApp();
   const data = (env.data || {}) as CardData;
-  const pwc = data.priceWithCard || env.card?.priceWithCard || null;
   const codes = codesOf(env.card);
   return (
     <div class="view" data-view="card">
@@ -19,15 +23,6 @@ export function CardViewPage({ env }: { env: Envelope }) {
           <h1 class="title" dir="auto">{data.drug.name}</h1>
         </header>
       )}
-      {pwc && hasPrice(pwc) && (
-        <p class="headline">
-          <span class="amt big" dir="ltr">
-            {money(pwc.amount, locale)}
-          </span>{" "}
-          {t("withCard")}
-          {pwc.name ? ` · ${pwc.name}` : ""} · {t("observed", { date: day(pwc.observedAt, locale) })}
-        </p>
-      )}
       <CodesLine bin={codes.bin} pcn={codes.pcn} group={codes.group} full />
       <section class="howto" aria-label={t("howToTitle")}>
         <p class="caption">{t("howToTitle")}</p>
@@ -35,6 +30,8 @@ export function CardViewPage({ env }: { env: Envelope }) {
           <li>{t("step1")}</li>
           <li>{t("step2")}</li>
           <li>{t("step3")}</li>
+          {/* counters ask for a Member ID: it is the patient's phone */}
+          <li>{t("step4")}</li>
         </ol>
       </section>
       <CardQr rows={data.qr && data.qr.rows} label={t("qrScan")} />

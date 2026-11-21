@@ -128,6 +128,12 @@ export const FALLBACK_LABELS: Labels = {
   compareNote: "A card price replaces insurance for that fill: it is not added to a copay and may not count toward a deductible.",
   belowAmount: "below {price}",
   basketSum: "A sum adds up observed card prices. It is not a quote: the pharmacy sets the final price.",
+  // --- MCP 2.2.1: the Member / Cardholder ID = the patient's 10-digit phone ---
+  // (counters ask for it; the card has no member number) — the site's own words
+  memberIdLabel: "Member / Cardholder ID",
+  memberIdHint: "Patient's 10-digit phone",
+  memberIdLine: "Member ID: your 10-digit phone number",
+  step4: "If they ask for a Member ID, give your 10-digit phone number.",
 };
 
 export function fill(template: string, vars?: Record<string, string | number>): string {

@@ -1604,11 +1604,101 @@ _BASKET: dict[str, dict[str, str]] = {
     },
 }
 
+# --- MCP 2.2.1: the Member / Cardholder ID (widget labels, 12 locales) -------------
+#
+# Counters ask for a Member ID before they run the card (FineRx support,
+# 2026-11-20), and this card has no member number: the program's Cardholder ID is
+# the patient's own 10-digit phone (LowerMyRx's card for group MYCARD3993 says so).
+# VERBATIM copies of the site's catalog (apps/web/locales/<loc>.json → savings:
+# memberIdLabel, memberIdHint, memberIdLine, cardPageHow4 — the last one equals
+# card.howToUse4, the API's 4th counter step), so the card in the chat, on the
+# site and on paper says the same words. ``tests/test_member_id.py`` checks the
+# copy against the catalog wherever the monorepo is checked out.
+
+MEMBER_EN: dict[str, str] = {
+    "memberIdLabel": "Member / Cardholder ID",
+    "memberIdHint": "Patient's 10-digit phone",
+    "memberIdLine": "Member ID: your 10-digit phone number",
+    "step4": "If they ask for a Member ID, give your 10-digit phone number.",
+}
+
+_MEMBER: dict[str, dict[str, str]] = {
+    "es": {
+        "memberIdLabel": "N.º de miembro / titular",
+        "memberIdHint": "Teléfono del paciente (10 dígitos)",
+        "memberIdLine": "N.º de miembro: tu número de teléfono de 10 dígitos",
+        "step4": "Si te piden un número de miembro, da tu número de teléfono de 10 dígitos.",
+    },
+    "zh": {
+        "memberIdLabel": "会员 ID / 持卡人 ID",
+        "memberIdHint": "患者的 10 位电话号码",
+        "memberIdLine": "会员 ID：您的 10 位电话号码",
+        "step4": "如果药剂师要会员 ID，请提供您的 10 位电话号码。",
+    },
+    "vi": {
+        "memberIdLabel": "Mã thành viên / chủ thẻ",
+        "memberIdHint": "Số điện thoại 10 chữ số của bệnh nhân",
+        "memberIdLine": "Mã thành viên: số điện thoại 10 chữ số của bạn",
+        "step4": "Nếu họ hỏi mã thành viên, hãy đưa số điện thoại 10 chữ số của bạn.",
+    },
+    "tl": {
+        "memberIdLabel": "Member / Cardholder ID",
+        "memberIdHint": "10-digit na numero ng telepono ng pasyente",
+        "memberIdLine": "Member ID: ang iyong 10-digit na numero ng telepono",
+        "step4": "Kung hingin nila ang Member ID, ibigay ang iyong 10-digit na numero ng telepono.",
+    },
+    "ar": {
+        "memberIdLabel": "معرّف العضو / حامل البطاقة",
+        "memberIdHint": "رقم هاتف المريض المكوّن من 10 أرقام",
+        "memberIdLine": "معرّف العضو: رقم هاتفك المكوّن من 10 أرقام",
+        "step4": "إذا طلبوا معرّف العضو، فأعطهم رقم هاتفك المكوّن من 10 أرقام.",
+    },
+    "ko": {
+        "memberIdLabel": "회원 ID / 카드 소지자 ID",
+        "memberIdHint": "환자의 10자리 전화번호",
+        "memberIdLine": "회원 ID: 본인의 10자리 전화번호",
+        "step4": "회원 ID를 물으면 본인의 10자리 전화번호를 알려 주세요.",
+    },
+    "ru": {
+        "memberIdLabel": "Member ID / ID владельца карты",
+        "memberIdHint": "10-значный номер телефона пациента",
+        "memberIdLine": "Member ID: ваш 10-значный номер телефона",
+        "step4": "Если спросят Member ID, назовите свой 10-значный номер телефона.",
+    },
+    "pt": {
+        "memberIdLabel": "Nº de membro / titular",
+        "memberIdHint": "Telefone do paciente (10 dígitos)",
+        "memberIdLine": "Nº de membro: seu telefone de 10 dígitos",
+        "step4": "Se pedirem o número de membro (Member ID), informe seu telefone de 10 dígitos.",
+    },
+    "ht": {
+        "memberIdLabel": "Nimewo Manm / ID moun ki gen kat la",
+        "memberIdHint": "Nimewo telefòn pasyan an (10 chif)",
+        "memberIdLine": "Nimewo Manm: nimewo telefòn ou ki gen 10 chif",
+        "step4": "Si yo mande w yon Member ID, ba yo nimewo telefòn ou ki gen 10 chif la.",
+    },
+    "fr": {
+        "memberIdLabel": "Numéro de membre / titulaire",
+        "memberIdHint": "Téléphone du patient (10 chiffres)",
+        "memberIdLine": "Numéro de membre : votre numéro de téléphone à 10 chiffres",
+        "step4": "Si on vous demande un numéro de membre (Member ID), donnez votre numéro de téléphone à 10 chiffres.",
+    },
+    "tr": {
+        "memberIdLabel": "Üye / Kart sahibi kimliği",
+        "memberIdHint": "Hastanın 10 haneli telefonu",
+        "memberIdLine": "Üye kimliği (Member ID): 10 haneli telefon numaranız",
+        "step4": "Üye kimliği (Member ID) sorarlarsa 10 haneli telefon numaranızı verin.",
+    },
+}
+
 EN.update(PHASE2_EN)
 for _loc, _extra in _PHASE2.items():
     _T[_loc].update(_extra)
 EN.update(BASKET_EN)
 for _loc, _extra in _BASKET.items():
+    _T[_loc].update(_extra)
+EN.update(MEMBER_EN)
+for _loc, _extra in _MEMBER.items():
     _T[_loc].update(_extra)
 
 LOCALES: tuple[str, ...] = ("en", *_T)
@@ -1705,6 +1795,8 @@ TEXT_EN: dict[str, str] = {
     "zipNotFound": "That ZIP code is not one we know. Try a nearby 5-digit ZIP.",
     # the card (get_savings_card, email_savings_card, card_law.law_block)
     "freeCard": "Free FineRx card",
+    # verbatim savings.memberIdLine (MEMBER_EN): the codes line carries it
+    "memberIdLine": "Member ID: your 10-digit phone number",
     "cardTitle": "**The free FineRx discount card** — free, no signup, not insurance.",
     "howToUse": "How to use it:",
     "sayAtCounter": "Say at the counter: “{phrase}”",
@@ -1833,6 +1925,7 @@ _TEXT: dict[str, dict[str, str]] = {
         "closeMatches": "Ningún medicamento coincide con «{query}». Coincidencias cercanas: {names}.",
         "zipNotFound": "No conocemos ese código postal. Pruebe con un código postal cercano de 5 dígitos.",
         "freeCard": "Tarjeta gratuita FineRx",
+        "memberIdLine": "N.º de miembro: tu número de teléfono de 10 dígitos",
         "cardTitle": "**La tarjeta de descuento gratuita FineRx**: gratis, sin registrarse, no es un seguro.",
         "howToUse": "Cómo usarla:",
         "sayAtCounter": "Diga en el mostrador: «{phrase}»",
@@ -1958,6 +2051,7 @@ _TEXT: dict[str, dict[str, str]] = {
         "closeMatches": "Ни одно лекарство не совпало с «{query}». Похожие: {names}.",
         "zipNotFound": "Такой ZIP-код нам неизвестен. Попробуйте соседний ZIP из 5 цифр.",
         "freeCard": "Бесплатная карта FineRx",
+        "memberIdLine": "Member ID: ваш 10-значный номер телефона",
         "cardTitle": "**Бесплатная скидочная карта FineRx** — бесплатно, без регистрации, не страховка.",
         "howToUse": "Как пользоваться:",
         "sayAtCounter": "Скажите у кассы: «{phrase}»",
@@ -2029,6 +2123,7 @@ def _borrowed(locale: str) -> dict[str, str]:
         "milesShort": w["miles"],
         "noPriceShort": w["noPriceShort"],
         "zipInvalid": w["zipInvalid"] + ".",
+        "memberIdLine": w["memberIdLine"],
     }
 
 

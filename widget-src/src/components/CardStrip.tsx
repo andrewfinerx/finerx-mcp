@@ -75,14 +75,84 @@ export function CardStrip({ card, secondary, onAllPharmacies, withLaw = true, fa
   );
 }
 
-/** The card itself — the teal face the site uses (SavingsCard #1FA6A6 → #0C7C7C),
- * so the person recognises the same object on the site, in the chat and on paper.
+// A faint treeline of ROUND crowns along the foot of the teal face — the site's
+// card (apps/web SavingsCard, owner pick 2026-11-21, canvas variant E2 "soft
+// treeline"). Two layers in white, the back canopy at 6 %, the front at 10 %,
+// each drawn as ONE group so overlapping crowns do not stack their opacity; the
+// site's 416×70 box, scaled with the aspect kept so the crowns stay round.
+type Crown = readonly [cx: number, cy: number, r: number];
+const CANOPY_BACK: readonly Crown[] = [
+  [-4, 44, 16], [22, 40, 17], [50, 43, 15], [76, 38, 18], [104, 42, 16],
+  [130, 45, 14], [156, 39, 18], [184, 42, 16], [212, 46, 14], [238, 40, 17],
+  [266, 43, 15], [292, 37, 19], [322, 42, 16], [348, 45, 14], [374, 40, 17],
+  [402, 43, 16], [424, 46, 14],
+];
+// Three taller round trees standing out of the back canopy: crown + trunk.
+const TALL_TREES: readonly (readonly [cx: number, cy: number, r: number, trunkTop: number, trunkH: number])[] = [
+  [118, 20, 11, 28, 14],
+  [262, 17, 12, 26, 14],
+  [390, 22, 10, 29, 12],
+];
+const CANOPY_FRONT: readonly Crown[] = [
+  [10, 58, 18], [52, 54, 22], [98, 60, 17], [140, 55, 21], [186, 59, 18],
+  [230, 53, 23], [276, 60, 17], [318, 55, 21], [362, 58, 19], [406, 54, 22],
+];
+
+function Treeline() {
+  return (
+    <svg class="cf-trees" aria-hidden="true" viewBox="0 0 416 70" preserveAspectRatio="xMidYMax meet">
+      <g fill="#fff" opacity="0.06">
+        <rect x="0" y="46" width="416" height="24" />
+        {CANOPY_BACK.map(([cx, cy, r]) => (
+          <circle key={`b${cx}`} cx={cx} cy={cy} r={r} />
+        ))}
+        {TALL_TREES.map(([cx, cy, r, trunkTop, trunkH]) => (
+          <g key={`t${cx}`}>
+            <circle cx={cx} cy={cy} r={r} />
+            <rect x={cx - 1.25} y={trunkTop} width="2.5" height={trunkH} />
+          </g>
+        ))}
+      </g>
+      <g fill="#fff" opacity="0.1">
+        <rect x="0" y="58" width="416" height="12" />
+        {CANOPY_FRONT.map(([cx, cy, r]) => (
+          <circle key={`f${cx}`} cx={cx} cy={cy} r={r} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/** The slim white strip at the foot of the card, for the pharmacist (site
+ * variant E2): counters ask for a Member ID before they run the card, and this
+ * card has no member number — the program's Cardholder ID is the patient's own
+ * 10-digit phone (LowerMyRx's card for group MYCARD3993 says so; FineRx support,
+ * 2026-11-20). The label over the hint, and a line to write the number on, for
+ * the person who prints or screenshots the card. No price, ever (2026-11-21). */
+function MemberStrip() {
+  const { t } = useApp();
+  return (
+    <div class="cf-member" data-testid="card-member">
+      <div class="cf-member-text">
+        <p class="cf-mk">{t("memberIdLabel")}</p>
+        <p class="cf-mh">{t("memberIdHint")}</p>
+      </div>
+      <span class="cf-line" aria-hidden="true" />
+    </div>
+  );
+}
+
+/** The card itself — the teal face the site uses (SavingsCard #1FA6A6 → #0C7C7C,
+ * the treeline, the faint wordmark top-right, the white Member ID strip), so the
+ * person recognises the same object on the site, in the chat and on paper.
  * `full` adds the "free · no signup" line; the compact face sits in every view. */
 export function CodesLine({ bin, pcn, group, full = false }: { bin: string; pcn: string; group: string; full?: boolean }) {
   const { t } = useApp();
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
-  const text = `${t("bin")} ${bin} · ${t("pcn")} ${pcn} · ${t("group")} ${group}`;
+  // What the person keeps: the codes and the Member ID line, as the site's Copy
+  // (CouponActions) — no drug, no price.
+  const text = `${t("bin")} ${bin} · ${t("pcn")} ${pcn} · ${t("group")} ${group}\n${t("memberIdLine")}`;
 
   function done() {
     setCopied(true);
@@ -118,33 +188,39 @@ export function CodesLine({ bin, pcn, group, full = false }: { bin: string; pcn:
 
   return (
     <div class={`cardface${full ? " full" : ""}`} data-testid="card-face">
-      <span class="cf-mark" aria-hidden="true">
-        FineRx
-      </span>
-      <div class="cf-inner">
-        <p class="cf-brand">FineRx</p>
-        <p class="cf-title">{t("cardTitle")}</p>
-        {full && <p class="cf-sub">{t("cardSub")}</p>}
-        <p class="cf-codes" dir="ltr" ref={ref} data-testid="card-codes">
-          <span class="cf-code">
-            <span class="k">{t("bin")}</span> <b>{bin}</b>
-          </span>
-          <span class="sep"> · </span>
-          <span class="cf-code">
-            <span class="k">{t("pcn")}</span> <b>{pcn}</b>
-          </span>
-          <span class="sep"> · </span>
-          <span class="cf-code">
-            <span class="k">{t("group")}</span> <b>{group}</b>
-          </span>
-        </p>
-        <div class="cf-foot">
-          <span class="cf-note">{t("notInsurance")}</span>
-          <button type="button" class="cf-copy" onClick={copy} aria-live="polite">
-            {copied ? t("copied") : t("copy")}
-          </button>
+      <div class="cf-face">
+        <Treeline />
+        {/* faint wordmark in the top-right corner, bleeding off the edge — up
+            here it stays clear of the treeline (the site, 2026-11-21) */}
+        <span class="cf-mark" aria-hidden="true">
+          FineRx
+        </span>
+        <div class="cf-inner">
+          <p class="cf-brand">FineRx</p>
+          <p class="cf-title">{t("cardTitle")}</p>
+          {full && <p class="cf-sub">{t("cardSub")}</p>}
+          <p class="cf-codes" dir="ltr" ref={ref} data-testid="card-codes">
+            <span class="cf-code">
+              <span class="k">{t("bin")}</span> <b>{bin}</b>
+            </span>
+            <span class="sep"> · </span>
+            <span class="cf-code">
+              <span class="k">{t("pcn")}</span> <b>{pcn}</b>
+            </span>
+            <span class="sep"> · </span>
+            <span class="cf-code">
+              <span class="k">{t("group")}</span> <b>{group}</b>
+            </span>
+          </p>
+          <div class="cf-foot">
+            <span class="cf-note">{t("notInsurance")}</span>
+            <button type="button" class="cf-copy" onClick={copy} aria-live="polite">
+              {copied ? t("copied") : t("copy")}
+            </button>
+          </div>
         </div>
       </div>
+      <MemberStrip />
     </div>
   );
 }

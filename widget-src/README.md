@@ -6,8 +6,8 @@ One bundle draws every view; the view is picked by `structuredContent.view` of t
 `finerx.view/2` envelope (contract C2, phase 2 C2'/C3'): `prices`, `pharmacies`
 (inline list, or the SVG map in fullscreen), `card`, `search` (fullscreen),
 `equivalent`, `rx`. An unknown view falls back to the tool's text content plus
-the card. The card strip (teal card face, codes, the law verbatim, two buttons,
-the small print) is in every view.
+the card. The card strip (teal card face with the Member ID strip, codes, the
+law verbatim, two buttons, the small print) is in every view.
 
 Vite + Preact + TypeScript + `vite-plugin-singlefile`. Node is needed only to
 BUILD: the built file is committed, and the Python package (wheel, box deploy)
@@ -125,6 +125,21 @@ text, rendered verbatim; the restricted-rx sentence is `data.note` when sent.
 The card law (`card.law`) and the small print (`card.fine`) are rendered
 VERBATIM from the payload. Only when a result carries no card at all does the
 widget show the bundled codes and the approved English no-price law.
+
+**The Member / Cardholder ID (2.2.1).** Counters ask for a Member ID before
+they run the card, and this card has none: the program's Cardholder ID is the
+patient's own 10-digit phone. The card face ends in a white strip
+(`memberIdLabel` over `memberIdHint`, a line to write the number on), the card
+view lists `step4`, "Copy" adds `memberIdLine` under the codes, and the counter
+screen says it to the pharmacist in English ("Member / Cardholder ID — Patient's
+10-digit phone", constants in `components/Counter.tsx`, like RxBIN), with
+`memberIdLine` under it when the card is shown in another language. The four
+keys are the site's own words (`labels.py` `MEMBER_EN`/`_MEMBER`).
+
+**No price on the card.** The face, the counter screen and the card view carry
+no amount (owner, 2026-11-21: a price on the card reads as the card's own and
+outlives the day it was seen). The dated price stays in the law beside the card
+and in the price views.
 
 ## Layout rules
 

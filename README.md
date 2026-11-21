@@ -58,6 +58,27 @@ API's authentication and rate limits, so it adds zero extra attack surface.
   a computer.
 - New views use the template `ui://finerx/v2.2/app.html`.
 
+## What changed in 2.2.1
+
+- **The Member / Cardholder ID on the card.** Pharmacies ask for a Member ID
+  before they run the card, and this card has no member number: the program's
+  Cardholder ID is the person's own 10-digit phone number. The card face in the
+  app ends in a slim white strip — "Member / Cardholder ID · Patient's 10-digit
+  phone", with a line to write it on — the "Show at the counter" screen says it
+  to the pharmacist (and in the person's language when that is not English),
+  the card view lists it as the fourth step at the counter, and "Copy" puts it
+  under the codes. Every text answer's codes line, the fallback SMS body, the
+  server instructions and `finerx://how-it-works` say "Member ID: your 10-digit
+  phone number". New labels in all 12 languages (`memberIdLabel`,
+  `memberIdHint`, `memberIdLine`, `step4`), the same words as the website's card.
+- **No price on the card itself.** The counter screen no longer prints a price
+  under the codes, and the card view no longer puts a price above the card: a
+  price on the card reads as the card's own and outlives the day it was seen.
+  The dated price stays in the card sentence beside the card (`card.law`), in
+  the text and in the price views; `structuredContent` is unchanged.
+- The card face matches the website's: a faint treeline of round crowns and the
+  FineRx wordmark in the top-right corner.
+
 ## What changed in 2.0
 
 - Prices are **card prices by pharmacy chain** with their observation date
@@ -148,8 +169,12 @@ completely, with no click-through.
   — `codes`, `priceWithCard` (amount, chain, `observedAt`) or null, `law` (the
   approved card sentence in the person's language), `fine` (the small print),
   `chainsCount`, `siteUrl`, `printUrl`, `actions` — and its text ends with the
-  codes, the sentence and the small print. If the API is unreachable, the codes
-  still come back (last good answer, then built-in constants).
+  codes, the line "Member ID: your 10-digit phone number" (in the person's
+  language), the sentence and the small print. If the API is unreachable, the
+  codes still come back (last good answer, then built-in constants).
+- **The Member ID is the person's phone number.** Pharmacies ask for a Member
+  (Cardholder) ID before they run the card; this card has no member number of
+  its own, so the person gives their 10-digit phone number, area code first.
 - **`get_savings_card`** adds the steps, the sentence to say to the pharmacist
   and the links; hosts that draw no UI also get a PNG of the card (never
   ChatGPT, where an image counts against the Free plan's image quota).

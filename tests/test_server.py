@@ -52,10 +52,10 @@ async def test_lists_the_phase_one_and_two_tools() -> None:
 
 
 async def test_version_is_the_release_candidate() -> None:
-    assert __version__ == "2.2.0"
+    assert __version__ == "2.2.1"
     async with create_connected_server_and_client_session(server.mcp._mcp_server) as session:
         init = await session.initialize()
-    assert init.serverInfo.version == "2.2.0"
+    assert init.serverInfo.version == "2.2.1"
 
 
 def test_instructions_carry_the_card_rule() -> None:
@@ -480,7 +480,7 @@ def test_wheel_ships_both_bundles(tmp_path: Path) -> None:
     built = subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], cwd=PACKAGE_ROOT, capture_output=True, text=True)
     assert built.returncode == 0, built.stderr
     wheels = list(tmp_path.glob("*.whl"))
-    assert wheels and "2.2.0" in wheels[0].name
+    assert wheels and "2.2.1" in wheels[0].name
     with zipfile.ZipFile(wheels[0]) as archive:
         names = archive.namelist()
     assert "finerx_mcp/widget/app.v2.html" in names

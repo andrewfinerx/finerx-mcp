@@ -49,7 +49,7 @@ p{margin:0}
   background:linear-gradient(135deg,#1FA6A6 0%,#0C7C7C 100%);
 }
 .card .mark{
-  position:absolute; right:-.35em; bottom:-.42em; font-size:5.2rem; font-weight:900;
+  position:absolute; right:-.26em; top:.125rem; font-size:clamp(3rem,13vw,4.25rem); font-weight:900;
   letter-spacing:-.04em; line-height:1; color:rgba(255,255,255,.10);
   pointer-events:none; user-select:none;
 }
@@ -70,6 +70,16 @@ p{margin:0}
 }
 .card .note{margin-top:1.05rem; font-size:.72rem; font-weight:700;
   color:rgba(255,255,255,.86)}
+/* the slim white strip for the pharmacist (2026-11-21, as on the site): the
+   Member / Cardholder ID is the patient's 10-digit phone, with a line to write it on */
+.card .member{position:relative; margin:14px -18px -16px; padding:8px 18px 10px;
+  background:#fff; color:#12302F; display:flex; flex-wrap:wrap; align-items:flex-end;
+  column-gap:.9rem; row-gap:.25rem; line-height:1.25}
+.card .member .mk{font-size:.6rem; font-weight:800; letter-spacing:.1em;
+  text-transform:uppercase; color:#0C6B6B}
+.card .member .mh{margin-top:.05rem; font-size:.8rem; font-weight:700}
+.card .member .line{flex:1 1 7rem; height:1.35rem; margin-bottom:.2rem;
+  border-bottom:1.5px solid #12302F}
 
 /* --- panels, price ------------------------------------------------------ */
 .panel{background:var(--panel); border:1px solid var(--panel-line);
@@ -153,6 +163,8 @@ footer{margin-top:18px; padding-top:12px; border-top:1px solid var(--line);
     cardSubtitle: "Show to your pharmacist",
     providedBy: "Provided by {name}",
     memberId: "Member ID",
+    memberIdLabel: "Member / Cardholder ID",
+    memberIdHint: "Patient's 10-digit phone",
     bin: "BIN", pcn: "PCN", group: "Group",
     notInsurance: "This card is not insurance",
     withCard: "with card",
@@ -418,6 +430,14 @@ footer{margin-top:18px; padding-top:12px; border-top:1px solid var(--line);
       add(cell, el("p", "v", pair[1]));
     });
     add(inner, el("p", "note", label("notInsurance")));
+
+    /* Counters ask for a Member ID; this card has none — the program's
+       Cardholder ID is the patient's own 10-digit phone (2026-11-21). */
+    var member = add(box, el("div", "member"));
+    var words = add(member, el("div"));
+    add(words, el("p", "mk", label("memberIdLabel")));
+    add(words, el("p", "mh", label("memberIdHint")));
+    add(member, el("span", "line")).setAttribute("aria-hidden", "true");
     return box;
   }
 
@@ -656,9 +676,11 @@ footer{margin-top:18px; padding-top:12px; border-top:1px solid var(--line);
     if (!root) { return; }
     var next = document.createDocumentFragment();
     add(next, cardVisual());
-    add(next, priceBlock());
     add(next, phraseBlock());
     add(next, stepsBlock());
+    /* No price against the card (owner, 2026-11-21): a price right under the
+       face reads as the card's own; the dated panel follows the steps. */
+    add(next, priceBlock());
     add(next, actionsBlock());
     add(next, proseBlock());
     add(next, faqBlock());

@@ -9,9 +9,14 @@ sentence with ``{price}``/``{date}`` filled in (``card.law``) plus the small pri
   dated price with the card or null, law, fine, chainsCount, siteUrl, printUrl)
   + ``actions {smsBody, emailEnabled}`` (contract C2 ``CARD_VIEW``). The widget
   draws its card strip from it in every view.
-* **In the text** — ``content`` ends with the codes, the law sentence and the
-  small print, so a host that renders no UI (Claude reads ``content`` only)
-  still hands the person the card.
+* **In the text** — ``content`` ends with the codes, the Member ID line (the
+  program's Cardholder ID is the patient's 10-digit phone — counters ask for it),
+  the law sentence and the small print, so a host that renders no UI (Claude
+  reads ``content`` only) still hands the person the card.
+* **No price on the card itself** (owner, 2026-11-21) — the card face, the
+  counter screen and everything the person keeps (SMS body, email, printable
+  sheet) carry the codes and the Member ID line only. A dated price stays in the
+  price views and in the law sentence beside the card.
 * **When the API is down** — the codes come from the last good ``/card`` answer
   or, failing that, the constants below (the same values the API serves); the
   law falls back to the approved no-price text of that locale. The card strip is
@@ -43,7 +48,13 @@ from finerx_mcp.labels import labels_for, tr
 # fallback: every normal answer takes the codes from the API.
 CODES: dict[str, str] = {"bin": "610219", "pcn": "DRX", "group": "MYCARD3993"}
 SITE = "https://www.finerxfinder.com"
-SMS_BODY = "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy."
+# Card-only, like the API's own body (render_card_text): no drug, no price. The
+# Member ID line because counters ask for one before they run the card, and this
+# card's Cardholder ID is the patient's 10-digit phone (2026-11-21).
+SMS_BODY = (
+    "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. "
+    "Member ID: your 10-digit phone number. Show it at the pharmacy."
+)
 
 # Words no text of ours may use (contract). "lowest" would be allowed only where
 # a price was COMPUTED to be the lowest (isLowest == true); MCP 2.0 never computes
@@ -302,11 +313,14 @@ def to_view(card: dict[str, Any], *, locale: str, restricted: bool = False, emai
 
 
 def codes_line(view: dict[str, Any], locale: str = "en") -> str:
+    """The three codes and the Member ID line ("Member ID: your 10-digit phone
+    number" in the reader's language) — counters ask for a Member ID, and this
+    card's Cardholder ID is the patient's own phone number."""
     c = view.get("codes") or CODES
     labels = labels_for(locale)
     return (
         f"**{tr(locale, 'freeCard')}:** {labels['bin']} {c.get('bin')} · {labels['pcn']} {c.get('pcn')} · "
-        f"{labels['group']} {c.get('group')}"
+        f"{labels['group']} {c.get('group')} · {tr(locale, 'memberIdLine')}"
     )
 
 

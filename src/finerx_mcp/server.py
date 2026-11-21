@@ -111,7 +111,7 @@ Which tool:
 
 The card rule — every answer about a medicine offers the free FineRx card:
 1. Answer first: each price with its chain and its observation date (observedAt) on the same line.
-2. Then the card sentence from card.law, as written, and the three codes (BIN, PCN, Group) — in full once per conversation, later a one-line reminder.
+2. Then the card sentence from card.law, as written, and the three codes (BIN, PCN, Group) with the line "Member ID: your 10-digit phone number" — in full once per conversation, later a one-line reminder. The card has no member number of its own: when the pharmacy asks for a Member ID (Cardholder ID), the person gives their own 10-digit phone number.
 3. End with card.fine in one line.
 The card is accepted at card.chainsCount pharmacy chains (say that number, not "most pharmacies"). Never promise a price or a saving, and never use these words about prices or the card: always, guaranteed, "save up to", best, cheapest, lowest, usually, "works with insurance". The pharmacy sets the final price at the counter; we do not see stock, so suggest calling ahead. Never scale a price to another pack size: when coverage is other_quantities, name the pack sizes that were seen.
 
@@ -2610,6 +2610,10 @@ called in the US, in 12 languages.
 Use the free FineRx card — accepted at 34+ pharmacy chains, no signup. Save it,
 print it, email or text it. Savings with the card can be substantial — estimated
 prices are on our site. Show the card at the pharmacy to get the final price.
+
+Member ID: your 10-digit phone number. The card has no member number of its own:
+when the pharmacy asks for a Member ID (Cardholder ID), the person gives their own
+10-digit phone number, area code first.
 
 Not insurance · prices observed on the date shown · FineRx may earn a fee · not medical advice
 

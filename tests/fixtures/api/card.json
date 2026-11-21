@@ -16,9 +16,10 @@
  "howToUse": [
   "Show the pharmacist the card, or read out the BIN, PCN and Group code.",
   "Ask them to run it as a discount card, not as insurance.",
-  "Ask what the price is with the card and without it, and pay the lower one."
+  "Ask what the price is with the card and without it, and pay the lower one.",
+  "If they ask for a Member ID, give your 10-digit phone number."
  ],
- "pharmacistPhrase": "Please run this as a discount card, not as insurance: BIN 610219, PCN DRX, Group MYCARD3993.",
+ "pharmacistPhrase": "Please run this as a discount card, not as insurance: BIN 610219, PCN DRX, Group MYCARD3993. Member ID: my 10-digit phone number.",
  "acceptedAt": "Accepted at participating pharmacies, including CVS, Walgreens, Walmart, Kroger, Costco. Ask the pharmacist if in doubt.",
  "saveHint": "Save the card as an image, email it to yourself, or open the card page on your phone.",
  "delivery": {
@@ -27,7 +28,7 @@
   "imageUrl": "https://www.finerxfinder.com/card.png?src=mcp",
   "emailEndpoint": "/card/email",
   "smsDeepLink": "sms:?&body=FineRx%20free%20discount%20card",
-  "smsBody": "FineRx free discount card: BIN 610219 PCN DRX GROUP MYCARD3993. Show it at the pharmacy.",
+  "smsBody": "FineRx: your free LowerMyRx prescription savings card. Show to your pharmacist: BIN 610219 PCN DRX GROUP MYCARD3993. Member ID: your 10-digit phone number. This card is not insurance. Keep it for every refill: https://www.finerxfinder.com/en/card?src=sms&utm_source=finerx&utm_medium=text&utm_campaign=card",
   "walletApple": null,
   "walletGoogle": null
  },
@@ -36,6 +37,10 @@
   {
    "q": "Does it work on every drug?",
    "a": "Usually yes, but discounts are largest on generics. Always compare."
+  },
+  {
+   "q": "The pharmacy asks for a Member ID. What do I give them?",
+   "a": "Your own 10-digit phone number, area code first. This card has no personal member number: the pharmacist enters the card's BIN, PCN and Group and your phone number as the Member (Cardholder) ID, and runs it as a discount card, not as insurance."
   }
  ],
  "legal": {

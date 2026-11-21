@@ -27,10 +27,46 @@ describe("every fixture renders its view with the card strip and the law", () =>
       // draws the full face above the strip, the others a compact one inside it).
       expect(screen.getAllByTestId("card-codes")).toHaveLength(1);
       expect(screen.getByTestId("card-codes").textContent).toContain("MYCARD3993");
-      expect(screen.getByTestId("card-face")).toBeTruthy();
+      const face = screen.getByTestId("card-face");
+      // The Member / Cardholder ID strip is part of the face, and the face never
+      // carries a price (owner, 2026-11-21).
+      expect(within(face).getByTestId("card-member")).toBeTruthy();
+      expect(face.textContent).not.toMatch(/\$\s?\d/);
       expect(document.body.textContent || "").not.toMatch(BANNED);
     });
   }
+});
+
+describe("the Member / Cardholder ID on the card", () => {
+  it("the strip tells the pharmacist it is the patient's 10-digit phone, with a line to write it on", async () => {
+    await renderWith(fixture("prices-exact"));
+    const strip = screen.getByTestId("card-member");
+    expect(strip.textContent).toContain("Member / Cardholder ID");
+    expect(strip.textContent).toContain("Patient's 10-digit phone");
+    expect(strip.querySelector(".cf-line")).toBeTruthy();
+  });
+
+  it("speaks the person's language when the server sends it", async () => {
+    const result = fixture("card");
+    Object.assign((result._meta as any)["finerx/labels"], {
+      memberIdLabel: "N.º de miembro / titular",
+      memberIdHint: "Teléfono del paciente (10 dígitos)",
+      memberIdLine: "N.º de miembro: tu número de teléfono de 10 dígitos",
+      step4: "Si te piden un número de miembro, da tu número de teléfono de 10 dígitos.",
+    });
+    await renderWith(result);
+    const strip = screen.getByTestId("card-member");
+    expect(strip.textContent).toContain("N.º de miembro / titular");
+    expect(strip.textContent).toContain("Teléfono del paciente (10 dígitos)");
+    expect(screen.getByText("Si te piden un número de miembro, da tu número de teléfono de 10 dígitos.")).toBeTruthy();
+    // At the counter: English for the pharmacist, the person's own line under it.
+    fireEvent.click(screen.getByRole("button", { name: "Show at the counter" }));
+    await flush();
+    const member = screen.getByTestId("counter-member");
+    expect(member.textContent).toContain("Member / Cardholder ID");
+    expect(member.textContent).toContain("Patient's 10-digit phone");
+    expect(screen.getByTestId("counter-member-own").textContent).toBe("N.º de miembro: tu número de teléfono de 10 dígitos");
+  });
 });
 
 describe("prices view", () => {
@@ -222,12 +258,26 @@ describe("pharmacies view", () => {
 });
 
 describe("card view and the Save menu", () => {
-  it("shows the price with its date and two buttons", async () => {
+  it("no price on the card or above it; the law beside it keeps the dated price; two buttons", async () => {
     await renderWith(fixture("card"));
-    expect(screen.getByText("$4.20")).toBeTruthy();
-    expect(document.body.textContent).toMatch(/observed Sep 21/);
-    const actions = screen.getByTestId("card-strip").querySelector(".actions")!;
+    // the face, the heading and the steps carry no amount (owner, 2026-11-21)
+    expect(screen.queryByText("$4.20")).toBeNull();
+    expect(document.querySelector(".headline")).toBeNull();
+    const view = document.querySelector('[data-view="card"]')!;
+    const strip = screen.getByTestId("card-strip");
+    const beforeStrip = (view.textContent || "").replace(strip.textContent || "", "");
+    expect(beforeStrip).not.toMatch(/\$\s?\d/);
+    // the card law (required in every answer) still names it, with its date
+    expect(screen.getByTestId("card-law").textContent).toMatch(/\$4\.20 \(observed Sep 21, 2026\)/);
+    const actions = strip.querySelector(".actions")!;
     expect(actions.querySelectorAll("button")).toHaveLength(2);
+  });
+
+  it("the steps end with the Member ID one", async () => {
+    await renderWith(fixture("card"));
+    const steps = document.querySelectorAll(".howto li");
+    expect(steps).toHaveLength(4);
+    expect(steps[3].textContent).toBe("If they ask for a Member ID, give your 10-digit phone number.");
   });
 
   it("email: nothing is sent without consent; with it, email_savings_card gets the address once", async () => {
@@ -274,7 +324,7 @@ describe("card view and the Save menu", () => {
     await renderWith(fixture("card"));
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     await flush();
-    expect(copied).toBe("BIN 610219 · PCN DRX · Group MYCARD3993");
+    expect(copied).toBe("BIN 610219 · PCN DRX · Group MYCARD3993\nMember ID: your 10-digit phone number");
     expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
   });
 });
@@ -289,6 +339,12 @@ describe("show at the counter", () => {
     expect(counter.textContent).toContain("610219");
     expect(counter.textContent).toContain("MYCARD3993");
     expect(counter.textContent).toContain("Not insurance");
+    // the Member ID for the pharmacist; English reads it once (no second line)
+    expect(within(counter).getByTestId("counter-member").textContent).toContain("Patient's 10-digit phone");
+    expect(within(counter).queryByTestId("counter-member-own")).toBeNull();
+    // no price on the counter screen, though this result carries one
+    expect((fixture("prices-exact").structuredContent as any).card.priceWithCard).toBeTruthy();
+    expect(counter.textContent).not.toMatch(/\$\s?\d/);
     fireEvent.click(within(counter).getByRole("button", { name: "Close" }));
     await flush();
     expect(bridge.requestDisplayMode).toHaveBeenLastCalledWith("inline");
