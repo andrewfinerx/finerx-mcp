@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from finerx_mcp.card_law import BANNED_RE
 from finerx_mcp.labels import tr
 from finerx_mcp.schemas import SCHEMA
 
@@ -77,11 +78,82 @@ def package_label(drug: dict | None, package: dict | None, locale: str = "en") -
     return f"{name} — {label}" if label else name
 
 
-def coverage_text(package: dict | None, coverage: dict | None, locale: str = "en") -> str | None:
+def package_note(src: dict | None) -> str | None:
+    """The API's note on a part of a package the counter does not split
+    ("30 g of a 50 g tube"), in the reader's language — or ours, when its words
+    are not ours to use: the English "Pharmacies usually dispense…" carries a
+    card-law word (``card_law.BANNED_RE``), so it is said without it."""
+    note = (src or {}).get("labelNote")
+    if not isinstance(note, str) or not note.strip():
+        return None
+    if not BANNED_RE.search(note):
+        return note
+    size, unit = (src or {}).get("packageSize"), (src or {}).get("billingUnit")
+    if isinstance(size, (int, float)) and not isinstance(size, bool) and unit in ("ml", "g"):
+        return tr("en", "wholePackageNote", size=f"{_number(size)} {'mL' if unit == 'ml' else 'g'}")
+    return tr("en", "wholePackageNoteBare")
+
+
+def scrub_notes(payload: Any) -> Any:
+    """Every ``labelNote`` in an API answer through ``package_note``, in place
+    (the package, each option, each basket item) — once, where the answer
+    comes in, so no text or card of ours carries the word."""
+    if isinstance(payload, dict):
+        if "labelNote" in payload:
+            payload["labelNote"] = package_note(payload)
+        for value in payload.values():
+            if isinstance(value, (dict, list)):
+                scrub_notes(value)
+    elif isinstance(payload, list):
+        for value in payload:
+            scrub_notes(value)
+    return payload
+
+
+def _number(n: Any) -> str:
+    if isinstance(n, float) and n.is_integer():
+        return str(int(n))
+    return str(n)
+
+
+def quantity_text(config_label: Any, option: dict) -> str:
+    """One pack size of a strength, without repeating the strength: "1 tube ·
+    50 g" out of "15% gel · 1 tube · 50 g" (the API's label), else the count."""
+    label = option.get("label")
+    head = f"{config_label} · " if config_label else None
+    if isinstance(label, str) and label:
+        return label[len(head):] if head and label.startswith(head) else label
+    return _number(option.get("quantity"))
+
+
+def _current_config(package: dict | None, options: dict | None) -> dict | None:
+    p = package or {}
+    for cfg in (options or {}).get("configs") or []:
+        if _same(cfg.get("form"), p.get("form")) and _same(cfg.get("strength"), p.get("strength")):
+            return cfg
+    return None
+
+
+def coverage_text(
+    package: dict | None,
+    coverage: dict | None,
+    locale: str = "en",
+    *,
+    asked: str | None = None,
+    options: dict | None = None,
+) -> str | None:
+    """"Not seen for X; seen for …". X is the amount as the person asked
+    ("30 g"); the pack sizes seen are named by their labels ("1 tube · 50 g")
+    when the options are at hand — a bare 1 or 0.6 says nothing."""
     status = (coverage or {}).get("status")
-    qty = (package or {}).get("quantity")
     if status == "other_quantities":
-        seen = ", ".join(str(q) for q in (coverage or {}).get("quantities") or [])
+        qty = asked or _number((package or {}).get("quantity"))
+        cfg = _current_config(package, options)
+        by_qty = {_number(o.get("quantity")): o for o in (cfg or {}).get("quantities") or []}
+        seen = ", ".join(
+            quantity_text((cfg or {}).get("label"), by_qty[_number(q)]) if _number(q) in by_qty else _number(q)
+            for q in (coverage or {}).get("quantities") or []
+        )
         return tr(locale, "coverageOther", quantity=qty, seen=seen)
     if status == "none":
         return tr(locale, "coverageNone")
@@ -107,6 +179,10 @@ def trim_options(options: dict | None, limit: int | None = MAX_CONFIGS) -> dict 
                     {
                         "quantity": q.get("quantity"),
                         "label": q.get("label"),
+                        # mL / g billed (#175 stage 2): the card picks a part of
+                        # a package (30 g of a 50 g tube) by this, not by 0.6.
+                        "billingQuantity": q.get("billingQuantity"),
+                        "labelNote": q.get("labelNote"),
                         "cardFrom": q.get("cardFrom"),
                         "chainsPriced": q.get("chainsPriced"),
                     }
@@ -119,20 +195,30 @@ def trim_options(options: dict | None, limit: int | None = MAX_CONFIGS) -> dict 
 
 def from_card_price(options: dict | None) -> dict | None:
     """The lowest card price seen for ANY package of the drug, with its date and
-    the package it belongs to (a "from" price is meaningless without it)."""
+    the package it belongs to (a "from" price is meaningless without it).
+
+    Never a part of a package the counter does not split (30 g of a 50 g tube:
+    the option carries a ``labelNote``) unless that is all there is — the
+    pharmacy hands over the tube, so its price is not where prices start (the
+    API's rule, card_units.sells_as_priced)."""
     best: dict | None = None
+    part: dict | None = None
     for cfg in (options or {}).get("configs") or []:
         for q in cfg.get("quantities") or []:
             cf = q.get("cardFrom")
             if not isinstance(cf, dict) or cf.get("amount") is None:
                 continue
-            if best is None or cf["amount"] < best["amount"]:
-                best = {
-                    "amount": cf["amount"],
-                    "observedAt": cf.get("observedAt"),
-                    "package": q.get("label") or cfg.get("label"),
-                }
-    return best
+            hit = {
+                "amount": cf["amount"],
+                "observedAt": cf.get("observedAt"),
+                "package": q.get("label") or cfg.get("label"),
+            }
+            if q.get("labelNote"):
+                if part is None or cf["amount"] < part["amount"]:
+                    part = hit
+            elif best is None or cf["amount"] < best["amount"]:
+                best = hit
+    return best or part
 
 
 # --- prices ----------------------------------------------------------------------
@@ -172,10 +258,21 @@ def prices_data(near: dict, options: dict | None) -> tuple[dict, list[dict]]:
     return data, rows
 
 
-def prices_text(near: dict, *, restricted: bool = False, locale: str = "en") -> str:
+def prices_text(
+    near: dict,
+    *,
+    restricted: bool = False,
+    locale: str = "en",
+    asked: str | None = None,
+    options: dict | None = None,
+) -> str:
     drug, package = near.get("drug"), near.get("package")
     place = place_label(near.get("origin"), locale)
     lines = [f"**{package_label(drug, package, locale)}**"]
+    # A part of a package the counter does not split (30 g of a 50 g tube):
+    # the note says the pharmacy may hand over the whole one.
+    if note := package_note(package):
+        lines.append(note)
     if near.get("needsZip") or not place:
         lines.append(tr(locale, "pricesNational"))
     else:
@@ -194,7 +291,7 @@ def prices_text(near: dict, *, restricted: bool = False, locale: str = "en") -> 
         price = dated(p.get("price"), locale)
         if price:
             lines.append(f"- {tr(locale, 'noStoreNearby', name=p.get('name'), price=price)}")
-    if cov := coverage_text(package, near.get("coverage"), locale):
+    if cov := coverage_text(package, near.get("coverage"), locale, asked=asked, options=options):
         lines.append(cov)
     lines.append(tr(locale, "perChain"))
     lines.append(tr(locale, "noStock"))
@@ -251,7 +348,13 @@ def packages_data(drug: dict, default_package: dict | None, options: dict | None
         "drug": {"slug": drug.get("slug"), "name": drug.get("name"), "kind": drug.get("kind")},
         "configs": shown,
         "moreCount": max(0, len(every) - len(shown)),
-        "default": {"form": d.get("form"), "strength": d.get("strength"), "quantity": d.get("quantity")},
+        "default": {
+            "form": d.get("form"),
+            "strength": d.get("strength"),
+            "quantity": d.get("quantity"),
+            # a part of a package is opened by what is billed (MCP 2.3)
+            **({"billingQuantity": d["billingQuantity"]} if d.get("billingQuantity") is not None else {}),
+        },
     }
 
 

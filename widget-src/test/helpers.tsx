@@ -28,6 +28,8 @@ export const FIXTURE_NAMES = [
   "transfer",
   "transfer-restricted",
   "card-qr",
+  // MCP 2.3: a part of a package (30 g of a 50 g tube) next to whole ones
+  "prices-part",
 ] as const;
 
 const files = import.meta.glob("../fixtures/*.json", { eager: true, import: "default" }) as Record<string, ToolResultLike>;

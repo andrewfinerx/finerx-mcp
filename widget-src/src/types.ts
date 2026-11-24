@@ -43,13 +43,22 @@ export interface Drug {
 export interface Package {
   form?: string;
   strength?: string;
+  /** Packages; a fraction for a part of one (0.6 = 30 g of a 50 g tube). */
   quantity?: number;
   label?: string;
+  /** mL / g / units billed (MCP 2.3): 30 for 30 g. */
+  billingQuantity?: number | null;
+  billingUnit?: "ml" | "g" | "ea" | null;
+  /** A part of a package the counter does not split, in the reader's language. */
+  labelNote?: string | null;
 }
 
 export interface QuantityOption {
   quantity: number;
   label?: string;
+  /** What the card sends back for a part of a package (30 g, not 0.6). */
+  billingQuantity?: number | null;
+  labelNote?: string | null;
   cardFrom?: Price | null;
   chainsPriced?: number;
 }
@@ -75,6 +84,8 @@ export interface Origin {
 export interface Coverage {
   status?: "exact" | "other_quantities" | "none";
   quantities?: number[];
+  /** The same packages in billing units, same order. */
+  billingQuantities?: number[];
 }
 
 export interface PriceRow {

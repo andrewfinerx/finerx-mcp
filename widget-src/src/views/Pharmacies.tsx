@@ -12,7 +12,7 @@ import { ChipRow, LocationLine, type Chip, type WhereInput } from "../components
 import { RINGS, StoreMap, centreOf, fitExtent, hasCoords, project } from "../components/StoreMap";
 import { familyColor, familyMonogram, familyName } from "../families";
 import { day, hasPrice, miles, money } from "../format";
-import { cleanArgs } from "../result";
+import { cleanArgs, packArgs } from "../result";
 import type { Envelope, PharmaciesData, Store } from "../types";
 
 export { FAMILY_NAMES } from "../families";
@@ -81,7 +81,7 @@ export function PharmaciesView({ env }: { env: Envelope }) {
         slug: data.drug?.slug,
         form: data.package?.form,
         strength: data.package?.strength,
-        quantity: data.package?.quantity,
+        ...packArgs(data.package),
       }),
       { typed: true },
     );

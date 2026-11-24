@@ -74,6 +74,20 @@ export function interpret(result: ToolResultLike | null | undefined): Interprete
 }
 
 /** Drop undefined / null / "" so a tool never receives an empty argument. */
+/** The package a card asks the server for: a whole number of packages as
+ * `quantity` (as before), a part of one (30 g of a 50 g tube — quantity 0.6) by
+ * what is billed, `billing_quantity`. Both keys are always present so a patch
+ * spread over older args clears the one it does not set. */
+export function packArgs(
+  q: { quantity?: number | null; billingQuantity?: number | null } | null | undefined,
+): { quantity?: number; billing_quantity?: number } {
+  const n = q && typeof q.quantity === "number" ? q.quantity : undefined;
+  if (n === undefined) return { quantity: undefined, billing_quantity: undefined };
+  if (Number.isInteger(n)) return { quantity: n, billing_quantity: undefined };
+  const b = q && typeof q.billingQuantity === "number" ? q.billingQuantity : undefined;
+  return { quantity: undefined, billing_quantity: b };
+}
+
 export function cleanArgs(args: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(args)) if (v !== undefined && v !== null && v !== "") out[k] = v;

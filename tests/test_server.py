@@ -52,10 +52,10 @@ async def test_lists_the_phase_one_and_two_tools() -> None:
 
 
 async def test_version_is_the_release_candidate() -> None:
-    assert __version__ == "2.2.1"
+    assert __version__ == "2.3.0"
     async with create_connected_server_and_client_session(server.mcp._mcp_server) as session:
         init = await session.initialize()
-    assert init.serverInfo.version == "2.2.1"
+    assert init.serverInfo.version == "2.3.0"
 
 
 def test_instructions_carry_the_card_rule() -> None:
@@ -123,7 +123,11 @@ async def test_card_resource_renders_codes_and_law_but_not_the_site_faq(api) -> 
 async def test_compare_prices_one_call_for_the_answer(api) -> None:
     result = await call("compare_prices", {"drug": "atorvastatin", "strength": "10 mg", "zip": "33101", "locale": "es"})
     body = body_of(api["near"])
-    assert body == {"drug": "atorvastatin", "strength": "10 mg", "zip": "33101", "locale": "es", "channel": "mcp"}
+    # units=billing (MCP 2.3): a part of a package may answer (30 g of a tube).
+    assert body == {
+        "drug": "atorvastatin", "strength": "10 mg", "zip": "33101", "locale": "es", "channel": "mcp",
+        "units": "billing",
+    }
     assert api["options"].called  # the chips
     sc = result.structuredContent
     assert sc["locale"] == "es" and sc["dir"] == "ltr"
@@ -167,7 +171,8 @@ async def test_other_quantities_are_named_never_scaled(api) -> None:
     api["near"].respond(json=near)
     text = text_of(await call("compare_prices", {"drug": "atorvastatin", "quantity": 45, "zip": "33101"}))
     assert "We have not seen a card price for 45" in text
-    assert "30, 90" in text
+    # The pack sizes seen, by their labels (options.json), not bare numbers.
+    assert "30 × 10mg Tablet, 90 × 10mg Tablet" in text
     assert "no card price seen for this package" in text
 
 
@@ -480,7 +485,7 @@ def test_wheel_ships_both_bundles(tmp_path: Path) -> None:
     built = subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], cwd=PACKAGE_ROOT, capture_output=True, text=True)
     assert built.returncode == 0, built.stderr
     wheels = list(tmp_path.glob("*.whl"))
-    assert wheels and "2.2.1" in wheels[0].name
+    assert wheels and "2.3.0" in wheels[0].name
     with zipfile.ZipFile(wheels[0]) as archive:
         names = archive.namelist()
     assert "finerx_mcp/widget/app.v2.html" in names
@@ -491,14 +496,15 @@ def test_wheel_ships_both_bundles(tmp_path: Path) -> None:
 def test_dose_and_pack_size_are_pulled_out_of_free_text():
     """A model often writes the dose into the name; the default package would
     then quote the wrong dose ("atorvastatin 20 mg" answered with 10 mg)."""
-    from finerx_mcp.server import _split_drug_text as split
+    from finerx_mcp.amounts import Pack, parse
+    from finerx_mcp.server import _split_drug_pack as split
 
-    assert split("atorvastatin 20 mg", None, None) == ("atorvastatin", "20 mg", None)
-    assert split("Adderall 20mg 60 tablets", None, None) == ("Adderall", "20 mg", 60)
-    assert split("lisinopril 10mg x90", None, None) == ("lisinopril", "10 mg", 90)
-    assert split("insulin glargine 100 units/ml", None, None) == ("insulin glargine", "100 units/ml", None)
-    assert split("amoxicillin 250 mg/5 ml suspension", None, None) == ("amoxicillin suspension", "250 mg/5ml", None)
+    assert split("atorvastatin 20 mg", None, None) == ("atorvastatin", "20 mg", Pack())
+    assert split("Adderall 20mg 60 tablets", None, None) == ("Adderall", "20 mg", Pack(quantity=60, asked="60 tablets"))
+    assert split("lisinopril 10mg x90", None, None) == ("lisinopril", "10 mg", Pack(quantity=90, asked="x90"))
+    assert split("insulin glargine 100 units/ml", None, None) == ("insulin glargine", "100 units/ml", Pack())
+    assert split("amoxicillin 250 mg/5 ml suspension", None, None) == ("amoxicillin suspension", "250 mg/5ml", Pack())
     # explicit arguments win; plain names and slugs pass through untouched
-    assert split("atorvastatin 20 mg", "40 mg", 90) == ("atorvastatin 20 mg", "40 mg", 90)
-    assert split("atorvastatin-calcium", None, None) == ("atorvastatin-calcium", None, None)
-    assert split("estradiol", None, None) == ("estradiol", None, None)
+    assert split("atorvastatin 20 mg", "40 mg", 90) == ("atorvastatin 20 mg", "40 mg", parse(90))
+    assert split("atorvastatin-calcium", None, None) == ("atorvastatin-calcium", None, Pack())
+    assert split("estradiol", None, None) == ("estradiol", None, Pack())

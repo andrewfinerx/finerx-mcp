@@ -64,16 +64,38 @@ class DrugRef(_M):
     kind: str | None = None
 
 
-class PackageRef(_M):
+class _Units(_M):
+    """What a package is in billing units (API 1.6.0, #175 stage 2): 50 g of a
+    tube, 2 mL in 4 pens, 30 tablets. All optional — an API that does not say
+    leaves the label as it is."""
+
+    billingQuantity: float | None = None
+    billingUnit: Literal["ml", "g", "ea"] | None = None
+    packageSize: float | None = None
+    packageNoun: str | None = None
+    contentNoun: str | None = None
+    splittable: bool | None = None
+    # A part of a package the counter does not split, in the reader's
+    # language: "Pharmacies usually dispense whole packages (50 g each)."
+    labelNote: str | None = None
+    cardForm: str | None = None
+    cardStrength: str | None = None
+
+
+class PackageRef(_Units):
     form: str | None = None
     strength: str | None = None
-    quantity: int | None = None
+    # Packages; a fraction for a part of one (0.6 = 30 g of a 50 g tube).
+    quantity: float | None = None
     label: str | None = None
 
 
 class QuantityOption(_M):
-    quantity: int
+    quantity: float
     label: str | None = None
+    # mL / g billed: what the card sends back for a part of a package.
+    billingQuantity: float | None = None
+    labelNote: str | None = None
     cardFrom: Price | None = None
     chainsPriced: int | None = None
 
@@ -102,7 +124,9 @@ class Origin(_M):
 
 class Coverage(_M):
     status: Literal["exact", "other_quantities", "none"]
-    quantities: list[int] = []
+    quantities: list[float] = []
+    # The same packages in billing units (10 for a 10 mL vial), same order.
+    billingQuantities: list[float] = []
 
 
 class PriceRow(_M):

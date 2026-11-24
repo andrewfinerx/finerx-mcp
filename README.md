@@ -58,6 +58,40 @@ API's authentication and rate limits, so it adds zero extra attack surface.
   a computer.
 - New views use the template `ui://finerx/v2.2/app.html`.
 
+## What changed in 2.3.0
+
+Live on `/mcp`, PyPI and the registry from 2026-11-25. It ran on the staging
+endpoint `/mcp-next` as 2.3.0rc1/rc2 first. The tool set is the same as
+2.2.1 (14 tools for the model, 5 called by the card); the input schemas
+change: `quantity` takes an amount, and the app-only tools take
+`billing_quantity`.
+
+- **Millilitres and grams.** A card price belongs to what the pharmacy bills:
+  50 g of a tube, 10 mL of a vial, 2 mL in four pens. `quantity` on
+  `compare_prices`, `find_nearby_pharmacies` and `get_transfer_steps` now takes
+  a count ("90 tablets", "4 pens", 30) **or** an amount by volume or weight
+  ("30 g", "10 mL", 2.5 = 2.5 mL) and sends the amount as `billingQuantity`
+  (API 1.6.0). An amount inside a name is understood too ("azelaic acid 15% gel
+  30 g", "testosterone cypionate 200 mg/mL 10 mL") — and "30 g" is no longer
+  read as a strength; "valacyclovir 1 g" still is.
+- **Parts of a package.** Every request opts in with `units: billing`, so a
+  part of a package that people fill (30 g of a 50 g tube, 150 mL poured from
+  100 mL bottles) is offered with its own observed price — never as a share
+  of the whole package's price. When the counter does not split that package,
+  the answer carries the API's note in the reader's language ("Pharmacies
+  usually dispense whole packages (50 g each).") in the text and in the card.
+- **Labels from the API in 12 languages** ("1 tube · 50 g", "4 pens · 2 mL",
+  "25 ampules · 75 mL"). "Not seen for X" names X as asked and lists the pack
+  sizes seen by their labels, not by bare numbers; `get_drug` lists pack sizes
+  by label too.
+- **"From" prices skip parts of a package** the counter does not split
+  (rc2): `get_drug`'s "card price from $X" is the lowest WHOLE package's, as on
+  the site and in the API (`card_units.sells_as_priced`).
+- The app-only tools `ui_prices`, `ui_nearby` and `ui_basket` take
+  `billing_quantity` (`billing_quantities`), which the card sends for a part
+  of a package; a fractional `quantity` from an older card falls back to the
+  default package instead of failing.
+
 ## What changed in 2.2.1
 
 - **The Member / Cardholder ID on the card.** Pharmacies ask for a Member ID

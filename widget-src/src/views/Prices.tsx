@@ -6,7 +6,7 @@ import { useApp } from "../context";
 import { CardStrip } from "../components/CardStrip";
 import { ChipRow, LocationLine, type Chip, type WhereInput } from "../components/Controls";
 import { day, hasPrice, miles, money, zoneLabel } from "../format";
-import { cleanArgs } from "../result";
+import { cleanArgs, packArgs } from "../result";
 import type { ConfigOption, Envelope, Origin, PriceRow, PricesData } from "../types";
 
 const INLINE_ROWS = 6;
@@ -45,7 +45,7 @@ export function PricesView({ env }: { env: Envelope }) {
         slug: drug.slug,
         form: pkg.form,
         strength: pkg.strength,
-        quantity: pkg.quantity,
+        ...packArgs(pkg),
         // The amount the person named stays with the package they look at.
         compare_to: against ? against.amount : undefined,
         ...patch,
@@ -64,14 +64,14 @@ export function PricesView({ env }: { env: Envelope }) {
         form: c.form,
         strength: c.strength,
         // Keep the quantity when the new dose sells it; else let the server pick.
-        quantity: (c.quantities || []).some((q) => q.quantity === pkg.quantity) ? pkg.quantity : undefined,
+        ...packArgs((c.quantities || []).find((q) => q.quantity === pkg.quantity)),
       }),
   }));
   const qtyChips: Chip[] = ((current && current.quantities) || []).map((q) => ({
     key: String(q.quantity),
     label: q.label || String(q.quantity),
     active: q.quantity === pkg.quantity,
-    onPick: () => refine({ quantity: q.quantity }),
+    onPick: () => refine(packArgs(q)),
   }));
 
   const rows = (data.rows || []).slice(0, INLINE_ROWS);
@@ -86,6 +86,11 @@ export function PricesView({ env }: { env: Envelope }) {
       <header class="head">
         <h1 class="title" dir="auto">{drug.name}</h1>
         {pkg.label && <p class="sub" dir="auto">{pkg.label}</p>}
+        {pkg.labelNote && (
+          <p class="small muted" dir="auto" data-testid="label-note">
+            {pkg.labelNote}
+          </p>
+        )}
       </header>
 
       <ChipRow chips={doseChips} label={t("pricesTitle")} />
@@ -102,7 +107,7 @@ export function PricesView({ env }: { env: Envelope }) {
         </div>
       )}
       {status !== "exact" && <p class="notice">{t("noPrice")}</p>}
-      {status === "other_quantities" && <OtherQuantities data={data} current={current} onPick={(q) => refine({ quantity: q })} />}
+      {status === "other_quantities" && <OtherQuantities data={data} current={current} onPick={(q) => refine(q)} />}
 
       {listedPriced || (status === "exact" && listed.length) ? (
         <>
@@ -135,7 +140,7 @@ export function PricesView({ env }: { env: Envelope }) {
         onAllPharmacies={() =>
           run(
             "ui_nearby",
-            cleanArgs({ slug: drug.slug, form: pkg.form, strength: pkg.strength, quantity: pkg.quantity, zip: knownZip }),
+            cleanArgs({ slug: drug.slug, form: pkg.form, strength: pkg.strength, ...packArgs(pkg), zip: knownZip }),
           )
         }
       />
@@ -175,21 +180,23 @@ function OtherQuantities({
 }: {
   data: PricesData;
   current: ConfigOption | undefined;
-  onPick: (quantity: number) => void;
+  onPick: (args: { quantity?: number; billing_quantity?: number }) => void;
 }) {
   const { t, locale, busy } = useApp();
   const qs = (data.coverage && data.coverage.quantities) || [];
+  const billed = (data.coverage && data.coverage.billingQuantities) || [];
   if (!qs.length) return null;
   const opt = (q: number) => ((current && current.quantities) || []).find((o) => o.quantity === q);
   return (
     <div class="other-q">
       <p class="small">{t("otherQuantities")}</p>
       <div class="chips">
-        {qs.map((q) => {
+        {qs.map((q, i) => {
           const o = opt(q);
           const from = o && hasPrice(o.cardFrom) ? o.cardFrom : null;
+          const pick = packArgs({ quantity: q, billingQuantity: o && o.billingQuantity != null ? o.billingQuantity : billed[i] });
           return (
-            <button type="button" class="chip" key={q} disabled={busy} data-testid={`other-q-${q}`} onClick={() => onPick(q)}>
+            <button type="button" class="chip" key={q} disabled={busy} data-testid={`other-q-${q}`} onClick={() => onPick(pick)}>
               <span dir="ltr">{(o && o.label) || q}</span>
               {from && (
                 <span class="muted">

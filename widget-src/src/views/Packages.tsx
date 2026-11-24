@@ -7,7 +7,7 @@
 import { useApp } from "../context";
 import { CardStrip } from "../components/CardStrip";
 import { day, hasPrice, money } from "../format";
-import { cleanArgs } from "../result";
+import { cleanArgs, packArgs } from "../result";
 import { personZip } from "./Prices";
 import type { ConfigOption, Envelope, PackagesData, QuantityOption } from "../types";
 
@@ -25,7 +25,7 @@ export function PackagesView({ env }: { env: Envelope }) {
   const zip = personZip(null, userZip);
 
   function open(c: ConfigOption, q: QuantityOption) {
-    return run("ui_prices", cleanArgs({ slug: drug.slug, form: c.form, strength: c.strength, quantity: q.quantity, zip }));
+    return run("ui_prices", cleanArgs({ slug: drug.slug, form: c.form, strength: c.strength, ...packArgs(q), zip }));
   }
 
   return (
@@ -73,7 +73,7 @@ export function PackagesView({ env }: { env: Envelope }) {
         secondary={{
           key: "prices",
           label: t("pricesWithCard"),
-          onClick: () => run("ui_prices", cleanArgs({ slug: drug.slug, form: def.form, strength: def.strength, quantity: def.quantity, zip })),
+          onClick: () => run("ui_prices", cleanArgs({ slug: drug.slug, form: def.form, strength: def.strength, ...packArgs(def), zip })),
         }}
       />
     </div>

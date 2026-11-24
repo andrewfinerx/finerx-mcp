@@ -1757,6 +1757,10 @@ TEXT_EN: dict[str, str] = {
     "placeApprox": "{where} (approximate)",
     "yourArea": "your area",
     "thisMedicine": "this medicine",
+    # A part of a package the counter does not split (#175 stage 2), when the
+    # API's own English note uses a word the card law keeps out ("usually").
+    "wholePackageNote": "A pharmacy may dispense only the whole package ({size} each).",
+    "wholePackageNoteBare": "A pharmacy may dispense only the whole package.",
     "coverageOther": (
         "We have not seen a card price for {quantity}; card prices were seen for these "
         "quantities: {seen}. A price is never scaled to another quantity."
@@ -1881,6 +1885,8 @@ _TEXT: dict[str, dict[str, str]] = {
         "placeApprox": "{where} (aproximado)",
         "yourArea": "su zona",
         "thisMedicine": "este medicamento",
+        "wholePackageNote": "Puede que la farmacia entregue solo el envase completo ({size} cada uno).",
+        "wholePackageNoteBare": "Puede que la farmacia entregue solo el envase completo.",
         "coverageOther": (
             "No hemos visto un precio con tarjeta para {quantity}; se vieron precios con "
             "tarjeta para estas cantidades: {seen}. Un precio nunca se ajusta a otra cantidad."
@@ -2012,6 +2018,8 @@ _TEXT: dict[str, dict[str, str]] = {
         "placeApprox": "{where} (примерно)",
         "yourArea": "ваш район",
         "thisMedicine": "это лекарство",
+        "wholePackageNote": "Аптека может отпустить только целую упаковку (по {size}).",
+        "wholePackageNoteBare": "Аптека может отпустить только целую упаковку.",
         "coverageOther": (
             "Цену с картой для {quantity} мы не видели; цены с картой были для таких количеств: "
             "{seen}. Цена никогда не пересчитывается на другое количество."

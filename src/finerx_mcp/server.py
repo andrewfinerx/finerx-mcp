@@ -67,7 +67,8 @@ import httpx
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 
-from finerx_mcp import __version__, card_law, hosts, next_steps, views
+from finerx_mcp import __version__, amounts, card_law, hosts, next_steps, views
+from finerx_mcp.amounts import Pack
 from finerx_mcp.client import USER_AGENT, FinerxApiError, FinerxClient, slug_path, valid_slug
 from finerx_mcp.flags import competitor_prices_enabled
 from finerx_mcp.labels import labels_for, tr
@@ -98,7 +99,7 @@ for _name in ("mcp", "mcp.server", "mcp.shared"):
 INSTRUCTIONS = """FineRx shows what US pharmacy chains were seen charging with the free FineRx discount card — per chain, each price with the date it was observed — and hands over the card itself: free, no signup, not insurance.
 
 Which tool:
-- "How much is X / near me / in 10001": compare_prices(drug, strength?, form?, quantity?, zip?). Pass zip only when the person named a ZIP or a place you can map to one; otherwise leave it out (the host's approximate location or a national answer is used). The card price is set per chain (Walmart: per state), so the choice is the chain, not the address.
+- "How much is X / near me / in 10001": compare_prices(drug, strength?, form?, quantity?, zip?). quantity is a count ("90 tablets", "4 pens") or what is dispensed by volume or weight ("30 g", "10 mL", 2.5 for 2.5 mL) — pass it as the person said it. Pass zip only when the person named a ZIP or a place you can map to one; otherwise leave it out (the host's approximate location or a national answer is used). The card price is set per chain (Walmart: per state), so the choice is the chain, not the address.
 - The person named an amount — a copay, what they pay now, or a price they want to be told about: pass it as compare_to on compare_prices; the answer counts the chains seen below it. A card price replaces insurance for that fill; it is not added to a copay. FineRx sends no alerts: to watch a price, re-run the same call later (on a schedule, if you can set one) and speak up only when a chain is below the amount.
 - Several medicines at once ("all my prescriptions", "which pharmacy for the whole list"): compare_basket(drugs, zip?) — one row per chain with the sum of its card prices, only where every medicine was seen with a price. A sum is an addition of observed prices, not a quote.
 - Pharmacies near a ZIP: find_nearby_pharmacies. Strengths and pack sizes of a drug: get_drug. A name to a slug: search_drugs — not needed before a price: the price tools take a name as typed, with its strength and pack size.
@@ -312,13 +313,21 @@ async def _options(slug: str | None, locale: str) -> dict | None:
     if (hit := _options_cache.get(key)) is not None and now - hit[0] < _OPTIONS_TTL_S:
         return hit[1]
     try:
-        data = await client().get(slug_path("/drugs/{}/options", slug), {"locale": locale})
+        data = views.scrub_notes(
+            await client().get(slug_path("/drugs/{}/options", slug), {"locale": locale, "units": "billing"})
+        )
     except FinerxApiError:
         return None
     if len(_options_cache) >= _OPTIONS_MAX:
         _options_cache.pop(next(iter(_options_cache)))
     _options_cache[key] = (now, data)
     return data
+
+
+async def _near(body: dict[str, Any]) -> dict:
+    """``POST /prices/near`` with its package notes said in our words
+    (views.scrub_notes)."""
+    return views.scrub_notes(await client().post("/prices/near", body))
 
 
 async def _base_card(locale: str, channel: str) -> dict[str, Any]:
@@ -455,40 +464,30 @@ _VIEW_OF = {
 
 
 # A model often puts the dose into the name ("atorvastatin 20 mg", "Adderall
-# 20mg 60 tablets") instead of the `strength`/`quantity` arguments. Without this
-# the API picks the default package and the answer quotes the wrong dose.
-_STRENGTH_IN_TEXT = re.compile(
-    r"(?<![\w.])(\d+(?:\.\d+)?)\s*(mcg|mg|g|ml|iu|units?|%)"
-    r"(?:\s*/\s*((?:\d+(?:\.\d+)?)?\s*(?:ml|l)))?(?![\w])",
-    re.IGNORECASE,
-)
-_QTY_IN_TEXT = re.compile(
-    r"(?:(?<![\w.])[x#]\s*(\d{1,4})(?![\w.])|(?<![\w.])(\d{1,4})\s*(?:tabs?|tablets?|caps?|capsules?|pills?|count|ct)\b)",
-    re.IGNORECASE,
-)
+# 20mg 60 tablets", "azelaic acid 15% gel 30 g") instead of the `strength` /
+# `quantity` arguments. Without pulling them out the API picks the default
+# package and the answer quotes the wrong dose or size (amounts.split_text).
 
 
-def _split_drug_text(
-    drug: str, strength: str | None, quantity: int | None
-) -> tuple[str, str | None, int | None]:
-    """Pull a dose / pack size out of a free-text medicine name when the explicit
-    arguments are empty; the name keeps whatever is left ("atorvastatin 20 mg 90
-    tablets" → ("atorvastatin", "20 mg", 90)). Slugs and plain names pass through."""
-    text_ = drug
-    if quantity is None:
-        m = _QTY_IN_TEXT.search(text_)
-        if m:
-            quantity = int(m.group(1) or m.group(2))
-            text_ = text_[: m.start()] + " " + text_[m.end():]
-    if not strength:
-        m = _STRENGTH_IN_TEXT.search(text_)
-        if m:
-            strength = f"{m.group(1)} {m.group(2).lower()}"
-            if m.group(3):
-                strength += "/" + "".join(m.group(3).lower().split())
-            text_ = text_[: m.start()] + " " + text_[m.end():]
-    cleaned = " ".join(text_.replace(",", " ").split())
-    return (cleaned or drug), strength, quantity
+def _split_drug_pack(
+    drug: str, strength: str | None, quantity: Any, form: str | None = None
+) -> tuple[str, str | None, Pack]:
+    """(name, strength, the amount asked for) from a name and the ``quantity``
+    argument: a count ("90 tablets", 4 pens) or billed mL / g ("30 g", 2.5)."""
+    return amounts.split_text(drug, strength, form, amounts.parse(quantity))
+
+
+def _ui_pack(quantity: Any, billing_quantity: Any) -> Pack:
+    """The package the card picked: ``billing_quantity`` (mL / g, for a part of
+    a package such as 30 g of a 50 g tube) wins; a whole ``quantity`` is a
+    count. A fractional ``quantity`` (0.6 of a tube, from a card drawn by an
+    older bundle) names nothing the API takes, so the server's default stands."""
+    billing = amounts.parse(billing_quantity)
+    if billing.quantity is not None or billing.billing is not None:
+        b = billing.billing if billing.billing is not None else float(billing.quantity)
+        return Pack(billing=b)
+    count = amounts.parse(quantity)
+    return Pack(quantity=count.quantity) if count.quantity is not None else Pack()
 
 
 async def _prices_answer(
@@ -497,7 +496,7 @@ async def _prices_answer(
     drug: str,
     form: str | None,
     strength: str | None,
-    quantity: int | None,
+    pack: Pack,
     zip: str | None,
     locale: str,
     channel: str,
@@ -516,7 +515,7 @@ async def _prices_answer(
         "drug": drug,
         "form": form,
         "strength": strength,
-        "quantity": quantity,
+        **pack.fields(),
         "locale": locale,
         "channel": channel,
     }
@@ -536,7 +535,7 @@ async def _prices_answer(
     direction = hosts.text_dir(locale)
     base = await _base_card(locale, channel)
     try:
-        near = await client().post("/prices/near", body)
+        near = await _near(body)
     except FinerxApiError as exc:
         restricted = card_law.is_restricted(drug)
         card_view = card_law.to_view(base, locale=locale, restricted=restricted)
@@ -564,7 +563,7 @@ async def _prices_answer(
         card_law.merge_api_card(near.get("card"), base), locale=locale, restricted=restricted
     )
     data, all_rows = views.prices_data(near, options)
-    text = views.prices_text(near, restricted=restricted, locale=locale)
+    text = views.prices_text(near, restricted=restricted, locale=locale, asked=pack.asked, options=options)
     if against := views.compare_to(near, compare_to):
         data["compareTo"] = against
         text += "\n" + views.compare_to_text(against, locale)
@@ -714,7 +713,7 @@ async def compare_prices(
     drug: str | None = None,
     strength: str | None = None,
     form: str | None = None,
-    quantity: int | None = None,
+    quantity: int | float | str | None = None,
     zip: str | None = None,
     ndc: str | None = None,
     locale: str | None = None,
@@ -727,7 +726,10 @@ async def compare_prices(
     Use when the person asks what a medicine costs, where it costs less, or its
     price near them or in a ZIP code. ``drug`` is a name as typed or a slug from
     search_drugs; ``strength`` ("10 mg"), ``form`` ("tablet") and ``quantity``
-    are optional (the package with the most chains priced is used). ``zip`` is a
+    are optional (the package people fill most is used). ``quantity`` is a
+    count — 90 (tablets), "4 pens", "2 vials" — or what is dispensed by volume
+    or weight: "30 g", "10 mL", 2.5 (mL); a part of a package (30 g of a 50 g
+    tube) has its own price or none, never a share of the whole. ``zip`` is a
     5-digit US ZIP — pass it only when the person gave one; without it the host's
     approximate location is used when there is one, else the answer is national
     and asks for a ZIP. ``ndc`` (+ ``quantity``) is accepted for older callers.
@@ -747,9 +749,10 @@ async def compare_prices(
     loc = hosts.resolve_locale(locale, ctx)
     chan = _channel(channel, ctx)
     legacy = None
+    pack = amounts.parse(quantity)
     if not drug and ndc:
         try:
-            product, legacy = await _legacy_package(ndc, quantity)
+            product, legacy = await _legacy_package(ndc, pack.quantity)
         except FinerxApiError as exc:
             if exc.status_code not in (404, 422):
                 return await _view_failure("prices", _api_error_text(exc, loc), "api_unavailable", loc, chan)
@@ -757,18 +760,18 @@ async def compare_prices(
         drug = product.get("drugSlug") or product.get("drugName")
         strength = strength or product.get("strength")
         form = form or product.get("form")
-        if quantity is None and product.get("quantity"):
-            quantity = int(product["quantity"])
+        if pack.empty and product.get("quantity"):
+            pack = Pack(quantity=int(product["quantity"]))
     if not drug:
         return await _view_failure("prices", tr(loc, "drugRequired"), "drug_required", loc, chan)
     if legacy is None:
-        drug, strength, quantity = _split_drug_text(drug, strength, quantity)
+        drug, strength, pack = amounts.split_text(drug, strength, form, pack)
     return await _prices_answer(
         ctx,
         drug=drug,
         form=form,
         strength=strength,
-        quantity=quantity,
+        pack=pack,
         zip=zip,
         locale=loc,
         channel=chan,
@@ -787,7 +790,8 @@ async def ui_prices(
     slug: str,
     form: str | None = None,
     strength: str | None = None,
-    quantity: int | None = None,
+    quantity: float | None = None,
+    billing_quantity: float | None = None,
     zip: str | None = None,
     where: str | None = None,
     locale: str | None = None,
@@ -797,7 +801,8 @@ async def ui_prices(
     """Card prices for another dose, quantity or place — called by the FineRx card itself.
 
     Same answer as compare_prices, for the package and place picked inside the
-    card. ``where`` is the place as typed in the card (a ZIP, a city or an
+    card. ``billing_quantity`` (mL / g) names a part of a package — 30 g of a
+    50 g tube. ``where`` is the place as typed in the card (a ZIP, a city or an
     address): used for this one request, never stored. Not for the model.
     """
     loc = hosts.resolve_locale(locale, ctx)
@@ -806,7 +811,7 @@ async def ui_prices(
         drug=slug,
         form=form,
         strength=strength,
-        quantity=quantity,
+        pack=_ui_pack(quantity, billing_quantity),
         zip=zip,
         where=where,
         locale=loc,
@@ -868,7 +873,7 @@ async def _pharmacies_answer(
     drug: str | None,
     form: str | None,
     strength: str | None,
-    quantity: int | None,
+    pack: Pack,
     limit: int,
     locale: str,
     channel: str,
@@ -894,7 +899,7 @@ async def _pharmacies_answer(
                 "drug": drug,
                 "form": form,
                 "strength": strength,
-                "quantity": quantity,
+                **pack.fields(),
                 "locale": locale,
                 "channel": channel,
             }
@@ -904,7 +909,7 @@ async def _pharmacies_answer(
                 body["address"] = typed
             elif here is not None:
                 body["lat"], body["lon"] = here.lat, here.lon
-            near = await client().post("/prices/near", body)
+            near = await _near(body)
             d = near.get("drug") or {}
             restricted = restricted or card_law.is_restricted(d.get("slug"), d.get("name"))
             card = card_law.merge_api_card(near.get("card"), base)
@@ -979,7 +984,7 @@ async def find_nearby_pharmacies(
     drug: str | None = None,
     strength: str | None = None,
     form: str | None = None,
-    quantity: int | None = None,
+    quantity: int | float | str | None = None,
     chains: str | None = None,
     limit: int = 3,
     locale: str | None = None,
@@ -993,13 +998,17 @@ async def find_nearby_pharmacies(
     codes: walmart, cvs, walgreens, kroger, albertsons, costco, publix, heb,
     hyvee, meijer, wegmans, shoprite, bigy, gianteagle, kinney (``chains`` is the
     older name of the same filter). With ``drug`` (+ optional strength, form,
-    quantity) each store carries its chain's card price and observation date.
+    quantity — a count or "30 g" / "10 mL") each store carries its chain's card
+    price and observation date.
 
     Returns stores (chain, address, city, distance, whether it is a pharmacy or a
     store with a pharmacy inside — not verified) and the card. Stock is not
     visible: suggest calling ahead. Coordinates © OpenStreetMap contributors.
     """
     loc = hosts.resolve_locale(locale, ctx)
+    pack = amounts.parse(quantity)
+    if drug:
+        drug, strength, pack = amounts.split_text(drug, strength, form, pack)
     return await _pharmacies_answer(
         ctx,
         zip=zip,
@@ -1007,7 +1016,7 @@ async def find_nearby_pharmacies(
         drug=drug,
         form=form,
         strength=strength,
-        quantity=quantity,
+        pack=pack,
         limit=limit,
         locale=loc,
         channel=hosts.default_channel(ctx),
@@ -1026,7 +1035,8 @@ async def ui_nearby(
     slug: str | None = None,
     form: str | None = None,
     strength: str | None = None,
-    quantity: int | None = None,
+    quantity: float | None = None,
+    billing_quantity: float | None = None,
     where: str | None = None,
     locale: str | None = None,
     ctx: Context | None = None,
@@ -1044,7 +1054,7 @@ async def ui_nearby(
         drug=slug,
         form=form,
         strength=strength,
-        quantity=quantity,
+        pack=_ui_pack(quantity, billing_quantity),
         limit=3,
         locale=loc,
         channel=hosts.default_channel(ctx),
@@ -1073,7 +1083,7 @@ async def get_transfer_steps(
     drug: str | None = None,
     strength: str | None = None,
     form: str | None = None,
-    quantity: int | None = None,
+    quantity: int | float | str | None = None,
     zip: str | None = None,
     locale: str | None = None,
     ctx: Context | None = None,
@@ -1115,10 +1125,9 @@ async def get_transfer_steps(
     nearby: dict | None = None
     try:
         if drug:
-            name, strength, quantity = _split_drug_text(drug, strength, quantity)
-            near = await client().post(
-                "/prices/near",
-                {"drug": name, "form": form, "strength": strength, "quantity": quantity, "locale": loc, "channel": chan, **place},
+            name, strength, pack = _split_drug_pack(drug, strength, quantity, form)
+            near = await _near(
+                {"drug": name, "form": form, "strength": strength, **pack.fields(), "locale": loc, "channel": chan, **place},
             )
         elif family and place:
             params: dict[str, Any] = {"limit": TRANSFER_STORES, "family": family}
@@ -1197,13 +1206,13 @@ async def _basket_answer(
             "drug": entry["drug"],
             "form": entry.get("form"),
             "strength": entry.get("strength"),
-            "quantity": entry.get("quantity"),
+            **(entry.get("pack") or Pack()).fields(),
             "locale": locale,
             "channel": channel,
             **place,
         }
         try:
-            return await client().post("/prices/near", body)
+            return await _near(body)
         except FinerxApiError as exc:
             return exc
 
@@ -1269,7 +1278,7 @@ async def compare_basket(
     Use when the person names two or more medicines and asks what they cost
     together, or which one pharmacy to use for all of them. ``drugs`` is two to
     six names as typed or slugs; a dose and a pack size may ride in each name
-    ("atorvastatin 40 mg 90"). ``zip`` is a 5-digit US ZIP — pass it only when
+    ("atorvastatin 40 mg 90", "azelaic acid gel 30 g"). ``zip`` is a 5-digit US ZIP — pass it only when
     the person gave one; without it the host's approximate location is used
     when there is one, else the chains are listed nationally.
 
@@ -1291,8 +1300,8 @@ async def compare_basket(
         return await _view_failure("basket", tr(loc, "drugRequired"), "drug_required", loc, chan)
     entries = []
     for text_ in raw[:BASKET_MAX]:
-        name, strength, quantity = _split_drug_text(text_, None, None)
-        entries.append({"drug": name, "strength": strength, "quantity": quantity})
+        name, strength, pack = _split_drug_pack(text_, None, None)
+        entries.append({"drug": name, "strength": strength, "pack": pack})
     return await _basket_answer(
         ctx, entries=entries, zip=zip, locale=loc, channel=chan, trimmed=len(raw) > BASKET_MAX
     )
@@ -1308,7 +1317,8 @@ async def ui_basket(
     slugs: list[str],
     strengths: list[str] | None = None,
     forms: list[str] | None = None,
-    quantities: list[int] | None = None,
+    quantities: list[float] | None = None,
+    billing_quantities: list[float] | None = None,
     zip: str | None = None,
     where: str | None = None,
     locale: str | None = None,
@@ -1317,7 +1327,7 @@ async def ui_basket(
     """The same list of medicines for another place — called by the FineRx card itself.
 
     ``slugs`` with their packages in parallel lists (an empty string or 0 = not
-    set). ``where`` is the place as typed in the card: used for this one
+    set; ``billing_quantities`` in mL / g for a part of a package). ``where`` is the place as typed in the card: used for this one
     request, never stored. Not for the model.
     """
     loc = hosts.resolve_locale(locale, ctx)
@@ -1328,7 +1338,12 @@ async def ui_basket(
         return v or None
 
     entries = [
-        {"drug": slug, "strength": at(strengths, i), "form": at(forms, i), "quantity": at(quantities, i)}
+        {
+            "drug": slug,
+            "strength": at(strengths, i),
+            "form": at(forms, i),
+            "pack": _ui_pack(at(quantities, i), at(billing_quantities, i)),
+        }
         for i, slug in enumerate((slugs or [])[:BASKET_MAX])
         if valid_slug(slug)
     ]
@@ -1544,7 +1559,9 @@ async def get_savings_card(
         try:
             slug = await _slug_for(drug, loc)
             cp = (
-                await client().get(slug_path("/drugs/{}/card-prices", slug), {"locale": loc, "channel": chan})
+                views.scrub_notes(
+                    await client().get(slug_path("/drugs/{}/card-prices", slug), {"locale": loc, "channel": chan})
+                )
                 if slug
                 else None
             )
@@ -1861,6 +1878,7 @@ async def get_drug(
         )
     if isinstance(cp, BaseException):
         raise cp
+    views.scrub_notes(cp)
     options = options if isinstance(options, dict) else None
     d = cp.get("drug") or {}
     restricted = card_law.is_restricted(slug, d.get("slug"), d.get("name"))
@@ -1871,7 +1889,8 @@ async def get_drug(
     lines = [f"**{d.get('name') or slug}** ({d.get('kind') or 'drug'}) — slug {d.get('slug') or slug}"]
     if trimmed:
         forms = "; ".join(
-            f"{c.get('label')} ({', '.join(str(q['quantity']) for q in c['quantities'])})" for c in trimmed["configs"]
+            f"{c.get('label')} ({', '.join(views.quantity_text(c.get('label'), q) for q in c['quantities'])})"
+            for c in trimmed["configs"]
         )
         lines.append(tr(loc, "strengthsLine", forms=forms))
     else:

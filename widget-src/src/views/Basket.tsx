@@ -8,7 +8,7 @@ import { useApp } from "../context";
 import { CardStrip } from "../components/CardStrip";
 import { LocationLine, type WhereInput } from "../components/Controls";
 import { day, hasPrice, miles, money, zoneLabel } from "../format";
-import { cleanArgs } from "../result";
+import { cleanArgs, packArgs } from "../result";
 import { personZip } from "./Prices";
 import type { BasketData, BasketItem, BasketRow, Envelope } from "../types";
 
@@ -35,13 +35,16 @@ export function BasketView({ env }: { env: Envelope }) {
   // The same list for another place. Packages travel as parallel lists
   // ("" / 0 = not set); a typed place goes out once and is never kept.
   function again(where: WhereInput) {
+    // mL / g only for a part of a package (30 g of a 50 g tube); sent only then.
+    const billed = items.map((it) => packArgs(it.package).billing_quantity || 0);
     return run(
       "ui_basket",
       cleanArgs({
         slugs: items.map((it) => it.drug.slug),
         strengths: items.map((it) => (it.package && it.package.strength) || ""),
         forms: items.map((it) => (it.package && it.package.form) || ""),
-        quantities: items.map((it) => (it.package && it.package.quantity) || 0),
+        quantities: items.map((it) => packArgs(it.package).quantity || 0),
+        billing_quantities: billed.some((b) => b > 0) ? billed : undefined,
         ...where,
       }),
       { typed: true },
@@ -49,7 +52,7 @@ export function BasketView({ env }: { env: Envelope }) {
   }
   function open(it: BasketItem) {
     const p = it.package || {};
-    return run("ui_prices", cleanArgs({ slug: it.drug.slug, form: p.form, strength: p.strength, quantity: p.quantity, zip: knownZip }));
+    return run("ui_prices", cleanArgs({ slug: it.drug.slug, form: p.form, strength: p.strength, ...packArgs(p), zip: knownZip }));
   }
 
   return (
